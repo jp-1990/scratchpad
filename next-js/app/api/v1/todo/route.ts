@@ -15,22 +15,37 @@ type Mode = (typeof MODE)[keyof typeof MODE];
 
 export async function readTodoFiles(ids: Todo["id"][]): Promise<Todo[]> {
   const readTodoFiles = ids.map(async (id) => {
-    const file = await fs.readFile(
-      process.cwd() + "/src/database/todo/" + id + ".json",
-      "utf8",
-    );
-    return JSON.parse(file);
+    let todo = undefined;
+    try {
+      const file = await fs.readFile(
+        process.cwd() + "/src/database/todo/" + id + ".json",
+        "utf8",
+      );
+      todo = JSON.parse(file) as Todo;
+    } catch (e) {
+      console.error("READ ERROR: unable to find file");
+    } finally {
+      return todo;
+    }
   });
   const todos = await Promise.all(readTodoFiles);
-  return todos;
+
+  return todos.filter((t) => t) as Todo[];
 }
 
 export async function readTodoIdsFile(): Promise<Todo["id"][]> {
-  const idsFile = await fs.readFile(
-    process.cwd() + "/src/database/todo-ids.json",
-    "utf8",
-  );
-  return JSON.parse(idsFile) as string[];
+  let ids: Todo["id"][] = [];
+  try {
+    const idsFile = await fs.readFile(
+      process.cwd() + "/src/database/todo-ids.json",
+      "utf8",
+    );
+    ids = JSON.parse(idsFile) as string[];
+  } catch (e) {
+    console.error("READ IDS ERROR: unable to find file");
+  } finally {
+    return ids;
+  }
 }
 
 export const dynamic = "force-dynamic"; // defaults to auto
@@ -54,11 +69,11 @@ export async function GET(request: Request) {
       const allIds = await readTodoIdsFile();
       todos = await readTodoFiles(allIds);
     }
+    return Response.json(todos);
   } catch (e) {
     console.log("GET ERROR: ", e);
+    return new Response(null, { status: 500, statusText: "INTERNAL_ERROR" });
   }
-
-  return Response.json(todos);
 }
 
 export async function POST(request: Request) {
@@ -83,11 +98,11 @@ export async function POST(request: Request) {
         { encoding: "utf8", flag: "w" },
       ),
     ]);
+    return Response.json(payload);
   } catch (e) {
     console.log("POST ERROR: ", e);
+    return new Response(null, { status: 500, statusText: "INTERNAL_ERROR" });
   }
-
-  return Response.json(payload);
 }
 
 export async function PATCH(request: Request) {
@@ -101,7 +116,9 @@ export async function PATCH(request: Request) {
     const payload = await request.json();
 
     target = (await readTodoFiles([payload.id]))[0];
-    if (!target) throw new Error("PATCH ERROR: unable to find target");
+    if (!target) {
+      return new Response(null, { status: 404, statusText: "TARGET_MISSING" });
+    }
 
     target.title = payload.title ?? target.title;
     target.description = payload.description ?? target.description;
@@ -112,9 +129,10 @@ export async function PATCH(request: Request) {
       JSON.stringify(target),
       { encoding: "utf8", flag: "w" },
     );
-  } catch (e) {
-    console.log("POST ERROR: ", e);
-  }
 
-  return Response.json(target);
+    return Response.json(target);
+  } catch (e) {
+    console.log("PATCH ERROR: ", e);
+    return new Response(null, { status: 500, statusText: "INTERNAL_ERROR" });
+  }
 }

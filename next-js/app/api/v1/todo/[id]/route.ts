@@ -3,9 +3,9 @@ import { readTodoIdsFile } from "../route";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { slug: string } },
+  { params }: { params: { id: string } },
 ) {
-  const id = params.slug;
+  const id = params.id;
   try {
     let allIds = await readTodoIdsFile();
     allIds = allIds.filter((id_) => id_ !== id);
@@ -19,9 +19,9 @@ export async function DELETE(
         force: true,
       }),
     ]);
+    return Response.json(request.body);
   } catch (e) {
-    console.log("POST ERROR: ", e);
+    console.log("DELETE ERROR: ", e);
+    return new Response(null, { status: 500, statusText: "INTERNAL_ERROR" });
   }
-
-  return Response.json(request.body);
 }

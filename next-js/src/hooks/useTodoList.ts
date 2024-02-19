@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { useNetworkStatus } from "./useNetworkStatus";
 import { NewTodoPayload, Todo, UpdateTodoPayload } from "../types/todo";
 
@@ -47,38 +47,6 @@ async function addTodo(todo: NewTodoPayload) {
   });
 }
 
-async function updateTodo(id: Todo["id"], payload: UpdateTodoPayload) {
-  let todos = JSON.parse(
-    window.localStorage.getItem("todos") ?? "[]",
-  ) as Todo[];
-
-  const targetIndex = todos.findIndex((t) => t.id === id);
-  const target = todos[targetIndex];
-  target.title = payload.title ?? target.title;
-  target.description = payload.description ?? target.description;
-  target.status = payload.status ?? target.status;
-
-  window.localStorage.setItem("todos", JSON.stringify(todos));
-  emitChange();
-  await fetch("/api/v1/todo", {
-    method: "PATCH",
-    body: JSON.stringify(target),
-  });
-}
-
-async function deleteTodo(id: Todo["id"]) {
-  let todos = JSON.parse(
-    window.localStorage.getItem("todos") ?? "[]",
-  ) as Todo[];
-  todos = todos.filter((t) => t.id !== id);
-
-  window.localStorage.setItem("todos", JSON.stringify(todos));
-  emitChange();
-  await fetch("/api/v1/todo/" + id, {
-    method: "DELETE",
-  });
-}
-
 function overwriteAll(todos: Todo[]) {
   window.localStorage.setItem("todos", JSON.stringify(todos));
   emitChange();
@@ -88,10 +56,73 @@ export function useTodoList(todos: Todo[]) {
   const { isOnline } = useNetworkStatus();
   const firstRender = useRef(true);
 
+  const updateSignals = useRef<Record<string, AbortController | undefined>>({});
+  const deleteSignals = useRef<Record<string, AbortController | undefined>>({});
+
   useEffect(() => {
     overwriteAll(todos);
     firstRender.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const updateTodo = useCallback(
+    async (id: Todo["id"], payload: UpdateTodoPayload) => {
+      let todos = JSON.parse(
+        window.localStorage.getItem("todos") ?? "[]",
+      ) as Todo[];
+
+      const targetIndex = todos.findIndex((t) => t.id === id);
+      const target = todos[targetIndex];
+      target.title = payload.title ?? target.title;
+      target.description = payload.description ?? target.description;
+      target.status = payload.status ?? target.status;
+
+      window.localStorage.setItem("todos", JSON.stringify(todos));
+      emitChange();
+
+      const controller = new AbortController();
+      updateSignals.current[id]?.abort();
+      updateSignals.current[id] = controller;
+
+      try {
+        const res = await fetch("/api/v1/todo", {
+          method: "PATCH",
+          body: JSON.stringify(target),
+          signal: controller.signal,
+        });
+        if (res.status === 200) {
+          updateSignals.current[id] = undefined;
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    },
+    [],
+  );
+
+  const deleteTodo = useCallback(async (id: Todo["id"]) => {
+    let todos = JSON.parse(
+      window.localStorage.getItem("todos") ?? "[]",
+    ) as Todo[];
+    todos = todos.filter((t) => t.id !== id);
+
+    window.localStorage.setItem("todos", JSON.stringify(todos));
+    emitChange();
+
+    const controller = new AbortController();
+    updateSignals.current[id]?.abort();
+    deleteSignals.current[id]?.abort();
+    deleteSignals.current[id] = controller;
+    try {
+      const res = await fetch("/api/v1/todo/" + id, {
+        method: "DELETE",
+      });
+      if (res.status === 200) {
+        updateSignals.current[id] = undefined;
+      }
+    } catch (e) {
+      console.log(e);
+    }
   }, []);
 
   const todoList_ = useSyncExternalStore(
