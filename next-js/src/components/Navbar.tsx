@@ -20,6 +20,12 @@ export default function Navbar() {
       >
         TODO
       </Link>
+      <Link
+        href="/mosaic"
+        className={`mr-4 ${pathname === "/mosaic" ? "text-teal-500" : ""}`}
+      >
+        MOSAIC
+      </Link>
     </nav>
   );
 }
