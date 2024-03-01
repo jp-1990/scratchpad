@@ -21,10 +21,16 @@ export default function Navbar() {
         TODO
       </Link>
       <Link
-        href="/mosaic"
-        className={`mr-4 ${pathname === "/mosaic" ? "text-teal-500" : ""}`}
+        href="/masonry"
+        className={`mr-4 ${pathname === "/masonry" ? "text-teal-500" : ""}`}
       >
-        MOSAIC
+        MASONRY
+      </Link>
+      <Link
+        href="/widget"
+        className={`mr-4 ${pathname === "/widget" ? "text-teal-500" : ""}`}
+      >
+        WIDGET
       </Link>
     </nav>
   );

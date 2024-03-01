@@ -52,7 +52,7 @@
 //   );
 // }
 //
-// export default function Mosaic() {
+// export default function Masonry() {
 //   const [isDropped, setIsDropped] = useState(false);
 //   const draggableMarkup = <Draggable>Drag me</Draggable>;
 //
@@ -89,7 +89,6 @@ import {
   rectSwappingStrategy,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
 import React, { useId, useState } from "react";
@@ -98,7 +97,12 @@ import { CSS } from "@dnd-kit/utilities";
 
 const SIZE = ["11", "12", "21", "22"] as const;
 
-type SortableBoxProps = { id: number; size: (typeof SIZE)[number]; data?: any };
+type SortableBoxProps = {
+  id: number;
+  size: (typeof SIZE)[number];
+  color: string;
+  data?: any;
+};
 
 export function SortableBox(props: SortableBoxProps) {
   const {
@@ -124,6 +128,7 @@ export function SortableBox(props: SortableBoxProps) {
     opacity: isOver && over?.id !== active?.id ? 0.5 : 1,
     gridColumn: width < 500 ? "span 1" : "span 2",
     gridRow: width < 500 ? "span 1" : "span 2",
+    backgroundColor: props.color,
   };
 
   return (
@@ -140,14 +145,14 @@ export function SortableBox(props: SortableBoxProps) {
 }
 
 const initialItems = [
-  { id: 1, size: 11 },
-  { id: 2, size: 11 },
-  { id: 3, size: 11 },
-  { id: 4, size: 22 },
-  { id: 5, size: 11 },
-  { id: 6, size: 11 },
-  { id: 7, size: 11 },
-  { id: 8, size: 22 },
+  { id: 1, size: 11, color: "red" },
+  { id: 2, size: 11, color: "green" },
+  { id: 3, size: 11, color: "blue" },
+  { id: 4, size: 22, color: "yellow" },
+  { id: 5, size: 11, color: "orange" },
+  { id: 6, size: 11, color: "white" },
+  { id: 7, size: 11, color: "gray" },
+  { id: 8, size: 22, color: "purple" },
 ];
 
 export default function App() {
@@ -175,6 +180,7 @@ export default function App() {
               key={item.id}
               id={item.id}
               size={`${item.size}` as any}
+              color={item.color}
             />
           ))}
         </SortableContext>
