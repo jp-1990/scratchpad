@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useId, useState } from "react";
-import { DndContext, closestCorners, pointerWithin } from "@dnd-kit/core";
+import React, { useId, useRef, useState } from "react";
+import { DndContext, pointerWithin } from "@dnd-kit/core";
 import { useDroppable } from "@dnd-kit/core";
 import { useDraggable } from "@dnd-kit/core";
 
-export function Droppable(props) {
+export function Droppable(props: any) {
   const { isOver, setNodeRef } = useDroppable({
     id: props.id,
   });
@@ -26,14 +26,14 @@ export function Droppable(props) {
   );
 }
 
-export function Draggable(props) {
+export function Draggable(props: any) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: props.id,
   });
   const style: any = transform
     ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
+      transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    }
     : {};
 
   //@ts-ignore
@@ -42,8 +42,10 @@ export function Draggable(props) {
   style.height = props.small ? "248px" : "498px";
   style.position = props.position;
   if (props.position === "absolute") {
-    style.top = 0;
-    style.left = 0;
+    style.top = props.small ? 0 : props.top;
+    style.left = props.small ? 0 : props.left;
+    style.bottom = props.bottom;
+    style.right = props.right;
     style.zIndex = 10;
   }
 
@@ -60,20 +62,23 @@ export function Draggable(props) {
   );
 }
 
-export default function Widget() {
-  // matrix
-  const containers: string[][] = [];
-  const initialOccupied: (string | null)[][] = [];
-  for (let i = 0; i < 4; i++) {
-    const row: string[] = [];
-    const row_: (string | null)[] = [];
-    for (let j = 0; j < 4; j++) {
-      row.push(`${i}:${j}`);
-      row_.push(null);
-    }
-    containers.push(row);
-    initialOccupied.push(row_);
+// matrix
+const containers: string[][] = [];
+const initialOccupied: (string)[][] = [];
+for (let i = 0; i < 4; i++) {
+  const row: string[] = [];
+  const row_: (string)[] = [];
+  for (let j = 0; j < 4; j++) {
+    row.push(`${i}:${j}`);
+    row_.push('');
   }
+  containers.push(row);
+  initialOccupied.push(row_);
+}
+
+
+
+export default function Widget() {
 
   const [widgets, setWidgets] = useState({
     "0": {
@@ -97,8 +102,7 @@ export default function Widget() {
       parent: null,
     },
   });
-  const [occupied, setOccupied] =
-    useState<(string | null)[][]>(initialOccupied);
+  const occupied = useRef<(string | null)[][]>(initialOccupied);
 
   const id = useId();
 
@@ -129,7 +133,7 @@ export default function Widget() {
         {containers.map((row) => {
           return row.map((id) => {
             const [row, col] = id.split(":");
-            const widgetId = occupied[+row][+col];
+            const widgetId = occupied.current[+row][+col];
             return (
               <Droppable key={id} id={id}>
                 {!widgetId ? (
@@ -140,6 +144,10 @@ export default function Widget() {
                     key={widgetId}
                     color={(widgets as any)[widgetId].style.color}
                     position={(widgets as any)[widgetId].style.position}
+                    top={(widgets as any)[widgetId].style.top}
+                    left={(widgets as any)[widgetId].style.left}
+                    bottom={(widgets as any)[widgetId].style.bottom}
+                    right={(widgets as any)[widgetId].style.right}
                     small={(widgets as any)[widgetId].size === "small"}
                   >
                     Drag Me
@@ -151,66 +159,125 @@ export default function Widget() {
         })}
       </div>
 
-      {/* <div className="flex flex-wrap w-[500px]">
-        {containers.map((id) => (
-          // We updated the Droppable component so it would accept an `id`
-          // prop and pass it to `useDroppable`
-          <Droppable key={id} id={id}>
-            {parent !== id && parent2 !== id && parent3 !== id && parent4 !== id
-              ? "Drop here"
-              : null}
-            {parent === id ? draggableMarkup : null}
-            {parent2 === id ? draggableMarkup2 : null}
-            {parent3 === id ? draggableMarkup3 : null}
-            {parent4 === id ? draggableMarkup4 : null}
-          </Droppable>
-        ))}
-      </div> */}
     </DndContext>
   );
 
-  function handleDragEnd(event) {
-    const { over, active } = event;
+  function handleDragEnd(event: any) {
+    const { over, active, activatorEvent: { layerX, layerY } } = event;
 
-    const widgetId = active.id;
+    const widgetId = active.id as keyof typeof widgets;
+
+    console.log(event)
+
+    // determine size of widget
+    const size = widgets[widgetId].size;
+
+    // if large, determine activation quarter
+    let grabCorner: null | string = null;
+    if (size === 'large') {
+      if (layerX < 249 && layerY < 249) grabCorner = '0:0'
+      if (layerX >= 249 && layerY < 249) grabCorner = '0:1'
+      if (layerX < 249 && layerY >= 249) grabCorner = '1:0'
+      if (layerX >= 249 && layerY >= 249) grabCorner = '1:1'
+    }
+
     let parentId = over?.id ?? null;
 
-    const widget = (widgets as any)[widgetId];
+    // check occupied slots to see if we can drop here
+    if (parentId) {
+      let [row, col] = parentId.split(':');
+      row = +row
+      col = +col
 
-    console.log(widgetId, parentId, widget);
+      // determine target cells
+      const cells = [];
+      switch (grabCorner) {
+        case '0:0':
+          cells.push([row, col]);
+          cells.push([row, col + 1]);
+          cells.push([row + 1, col]);
+          cells.push([row + 1, col + 1]);
+          break;
+        case '0:1':
+          break;
+        case '1:0':
+          break;
+        case '1:1':
+          break;
 
-    setOccupied((prev) => {
-      const prevParent = widget.parent;
-      console.log("prevparent", prevParent);
-      if (prevParent) {
-        const [prevRow, prevCol] = prevParent.split(":");
-        prev[prevRow][prevCol] = null;
+        default:
+          cells.push([row, col]);
       }
 
-      if (!parentId) return [...prev];
+      console.log('cells', cells)
 
-      const [row, col] = parentId.split(":");
-      console.log(row, col);
-      if (prev[row][col] === null) {
-        prev[row][col] = widgetId;
+      // check if free
+      for (const cell of cells) {
+        if (!cell) continue
+        if (occupied.current[cell[0]][cell[1]]) return
       }
 
-      console.log(prev);
 
-      return [...prev];
-    });
+      // we're dropping in a valid cell - clear the previous cell/cells
+      for (let i = 0; i < occupied.current.length; i++) {
+        for (let j = 0; j < occupied.current[i].length; j++) {
+          if (occupied.current[i][j] === widgetId) {
+            occupied.current[i][j] = '';
+          }
+        }
+      }
+      // set new cell
+      for (const cell of cells) {
+        if (!cell) continue
+        occupied.current[cell[0]][cell[1]] = widgetId;
+      }
+    } else {
+      // if theres no parent id we dropped outside the grid - clear the widgetid from the grid
+      for (let i = 0; i < occupied.current.length; i++) {
+        for (let j = 0; j < occupied.current[i].length; j++) {
+          if (occupied.current[i][j] === widgetId) {
+            occupied.current[i][j] = '';
+          }
+        }
+      }
+    }
 
+    // update widgets with new parent
     setWidgets((prev: any) => {
+      prev[widgetId].parent = parentId
       if (parentId) {
-        const [row, col] = parentId.split(":");
-        if (occupied[row][col] !== null) parentId = null;
-      }
+        prev[widgetId].style.position = 'absolute'
 
-      widget.parent = parentId;
-      if (widget.parent) {
-        widget.style.position = "absolute";
+        if (grabCorner) {
+          switch (grabCorner) {
+            case '0:0':
+              prev[widgetId].style.top = 0
+              prev[widgetId].style.left = 0
+              prev[widgetId].style.bottom = undefined
+              prev[widgetId].style.right = undefined
+              break;
+            case '0:1':
+              prev[widgetId].style.top = 0
+              prev[widgetId].style.left = undefined
+              prev[widgetId].style.bottom = undefined
+              prev[widgetId].style.right = 0
+              break;
+            case '1:0':
+              prev[widgetId].style.top = undefined
+              prev[widgetId].style.left = 0
+              prev[widgetId].style.bottom = 0
+              prev[widgetId].style.right = undefined
+              break;
+            case '1:1':
+              prev[widgetId].style.top = undefined
+              prev[widgetId].style.left = undefined
+              prev[widgetId].style.bottom = 0
+              prev[widgetId].style.right = 0
+              break;
+          }
+        }
       } else {
-        widget.style.position = "relative";
+        prev[widgetId].style.position = 'relative'
       }
 
       return { ...prev };

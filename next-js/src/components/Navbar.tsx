@@ -32,6 +32,12 @@ export default function Navbar() {
       >
         WIDGET
       </Link>
+      <Link
+        href="/widget2"
+        className={`mr-4 ${pathname === "/widget2" ? "text-teal-500" : ""}`}
+      >
+        WIDGET2
+      </Link>
     </nav>
   );
 }
