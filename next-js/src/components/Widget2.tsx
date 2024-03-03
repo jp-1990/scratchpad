@@ -1,15 +1,13 @@
 'use client'
 
-import React, { useId } from 'react';
+import React from 'react';
 import GridLayout, { Layout } from "react-grid-layout";
 import "../../node_modules/react-grid-layout/css/styles.css";
 import "../../node_modules/react-resizable/css/styles.css";
 
-const defaultLayout = { i: '', x: 0, y: 0, w: 1, h: 1, }
-
 type WidgetProps = {
-  size: 'large' | 'small',
   bg: string
+  onRemove: (e: any, id: any) => void
 } & any
 const WidgetWithRef = React.forwardRef(function Widget({ style, className, onMouseDown, onMouseUp, onTouchEnd, children, id, onRemove, bg }: WidgetProps, ref: any) {
   return (
@@ -28,18 +26,19 @@ const WidgetWithRef = React.forwardRef(function Widget({ style, className, onMou
 export default function WidgetPage() {
 
   const [widgets, setWidgets] = React.useState({
-    '0': { key: '0', size: 'large', bg: 'bg-red-500', 'data-grid': { ...defaultLayout, i: '0', w: 2, h: 2, x: 0, y: 0 } },
-    '1': { key: '1', size: 'large', bg: 'bg-blue-500', 'data-grid': { ...defaultLayout, i: '1', w: 2, h: 2, x: 2, y: 0 } },
-    '2': { key: '2', size: 'small', bg: 'bg-green-500', 'data-grid': { ...defaultLayout, i: '2', w: 1, h: 1, x: 0, y: 2 } },
+    '0': { key: '0', size: 'large', bg: 'bg-red-500', 'data-grid': { i: '0', w: 2, h: 2, x: 0, y: 0 } },
+    '1': { key: '1', size: 'large', bg: 'bg-blue-500', 'data-grid': { i: '1', w: 2, h: 2, x: 2, y: 0 } },
+    '2': { key: '2', size: 'small', bg: 'bg-green-500', 'data-grid': { i: '2', w: 1, h: 1, x: 0, y: 2 } },
   })
 
   const layout = React.useRef<Layout[]>([])
   const maxY = React.useRef<number>(2)
 
-  function addWidget() {
+  function addWidget(size: string) {
     setWidgets(prev => {
+      // build grid to check free areas
       const matrix: number[][] = []
-      for (let i = 0; i <= maxY.current + 1; i++) {
+      for (let i = 0; i <= maxY.current + 4; i++) {
         const row: number[] = []
         for (let j = 0; j < 4; j++) {
           row.push(0)
@@ -47,40 +46,87 @@ export default function WidgetPage() {
         matrix.push(row);
       }
 
+      // populate grid with taken cells
       for (const l of layout.current) {
-        const isLarge = prev[l.i as keyof typeof widgets].size === 'large'
-        matrix[l.y][l.x] = 1;
-        if (l.y > maxY.current) maxY.current = l.y
+        const size = prev[l.i as keyof typeof widgets].size
 
-        if (isLarge) {
-          matrix[l.y][l.x + 1] = 1;
-          matrix[l.y + 1][l.x] = 1;
-          matrix[l.y + 1][l.x + 1] = 1;
-          if (l.y + 1 > maxY.current) maxY.current = l.y
+        matrix[l.y][l.x] = 1;
+        switch (size) {
+          case 'small':
+            if (l.y > maxY.current) maxY.current = l.y
+            continue
+
+          case 'large':
+            matrix[l.y][l.x + 1] = 1;
+            matrix[l.y + 1][l.x] = 1;
+            matrix[l.y + 1][l.x + 1] = 1;
+            if (l.y + 1 > maxY.current) maxY.current = l.y
+            continue
+
+          case 'long':
+            matrix[l.y][l.x + 1] = 1;
+            matrix[l.y][l.x + 2] = 1;
+            matrix[l.y][l.x + 3] = 1;
+            if (l.y > maxY.current) maxY.current = l.y
+            continue
         }
+
+
         prev[l.i as keyof typeof widgets]['data-grid'] = l
       }
 
+      // find first available location based on size 
       let firstGap = [0, 0];
-      for (let i = 0; i <= maxY.current + 1; i++) {
+      outer: for (let i = 0; i <= maxY.current + 4; i++) {
         if (firstGap[0] || firstGap[1]) break;
         for (let j = 0; j < 4; j++) {
+          // skip row
+          if (j === 0 && size === 'long' && matrix[i][j] === 1) continue;
+
           if (matrix[i][j] === 0) {
-            firstGap = [i, j];
-            break
+            switch (size) {
+              case 'small':
+                firstGap = [i, j];
+                break outer;
+
+              case 'large': {
+                const willFit = matrix[i + 1]?.[j] === 0 && matrix[i]?.[j + 1] === 0 && matrix[i + 1]?.[j + 1] === 0
+                if (willFit) {
+                  firstGap = [i, j];
+                  break outer
+                }
+              }
+
+              case 'long': {
+                const willFit = matrix[i]?.[j + 1] === 0 && matrix[i]?.[j + 2] === 0 && matrix[i]?.[j + 3] === 0
+                if (willFit) {
+                  firstGap = [i, j];
+                  break outer
+                }
+              }
+            }
+
           }
         }
       }
 
-      console.log(matrix, firstGap)
+      const bg = [
+        'bg-purple-500',
+        'bg-green-500',
+        'bg-red-500',
+        'bg-orange-500',
+        'bg-teal-500',
+        'bg-blue-500',
+      ]
 
 
       const id = crypto.randomUUID()
+      const [width, height] = size === 'large' ? [2, 2] : size === 'small' ? [1, 1] : [4, 1]
       const w = {
         key: id,
-        size: 'small',
-        bg: 'bg-purple-500',
-        'data-grid': { i: id, x: firstGap[1], y: firstGap[0], w: 1, h: 1 }
+        size: size,
+        bg: bg[Math.floor(Math.random() * bg.length)],
+        'data-grid': { i: id, x: firstGap[1], y: firstGap[0], w: width, h: height }
       }
 
       return { ...prev, [id]: w }
@@ -101,12 +147,11 @@ export default function WidgetPage() {
 
   function onLayoutChange(l: Layout[]) {
     layout.current = l
-    console.log(layout)
+    console.log('LAYOUT_CHANGE:', layout)
   }
 
   return (
-    <>
-      <button onClick={addWidget}>ADD</button>
+    <div className='relative'>
       <GridLayout
         className="layout"
         cols={4}
@@ -128,6 +173,12 @@ export default function WidgetPage() {
         }
 
       </GridLayout>
-    </>
+
+      <div className='fixed bottom-6 right-6 font-mono flex flex-col'>
+        <button className='px-3 py-1 my-1 rounded-md bg-gray-50 text-gray-900 text-xl' onClick={() => addWidget('small')}>ADD 1x1</button>
+        <button className='px-3 py-1 my-1 rounded-md bg-gray-50 text-gray-900 text-xl' onClick={() => addWidget('large')}>ADD 2x2</button>
+        <button className='px-3 py-1 my-1 rounded-md bg-gray-50 text-gray-900 text-xl' onClick={() => addWidget('long')}>ADD 4x1</button>
+      </div>
+    </div>
   );
 }
