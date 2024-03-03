@@ -4,6 +4,10 @@ import "./globals.css";
 import Navbar from "@/src/components/Navbar";
 import NetworkStatus from "@/src/components/NetworkStatus";
 
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
+import { ThemeProvider } from "@mui/material/styles";
+import theme from "../theme";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -19,9 +23,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} p-1`}>
-        <Navbar />
-        <NetworkStatus />
-        <main>{children}</main>
+        <AppRouterCacheProvider>
+          <ThemeProvider theme={theme}>
+            <Navbar />
+            <NetworkStatus />
+            <main>{children}</main>
+          </ThemeProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
