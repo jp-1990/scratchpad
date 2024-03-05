@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Layout, Responsive, WidthProvider } from "react-grid-layout";
 import "../../node_modules/react-grid-layout/css/styles.css";
 import "../../node_modules/react-resizable/css/styles.css";
@@ -187,6 +187,12 @@ const contentMap = {
 
 const titleMap = ["Overtime Report", "Advertiser Report", "Conversion Report"];
 
+const draggableIdMap = {
+  small: "draggable-widget-small",
+  large: "draggable-widget-large",
+  long: "draggable-widget-long",
+};
+
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 const breakpoints = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 };
@@ -260,14 +266,51 @@ const WidgetWithRef = React.forwardRef(function Widget(
     setView("data");
   };
 
+  let timeout: NodeJS.Timeout | undefined = undefined;
+
+  const wrapTouchEnd = (...args: any) => {
+    console.log("touchend");
+    if (!timeout) {
+      document
+        .getElementById(`${draggableIdMap[size]}-${id}`)
+        ?.classList.add("on-remove-button");
+    }
+    onTouchEnd(args);
+  };
+
+  const onTouchStart = () => {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = undefined;
+    }
+    document
+      .getElementById(`${draggableIdMap[size]}-${id}`)
+      ?.classList.remove("on-remove-button");
+    timeout = setTimeout(() => {
+      document
+        .getElementById(`${draggableIdMap[size]}-${id}`)
+        ?.classList.add("on-remove-button");
+    }, 500);
+  };
+
+  useEffect(() => {
+    if (!window.matchMedia("(any-hover: none)").matches) {
+      document
+        .getElementById(`${draggableIdMap[size]}-${id}`)
+        ?.classList.remove("on-remove-button");
+    }
+  });
+
   if (size === "small") {
     return (
       <div
+        id={`${draggableIdMap[size]}-${id}`}
         style={{ ...style }}
-        className={className}
+        className={className + " on-remove-button"}
         onMouseDown={onMouseDown}
         onMouseUp={onMouseUp}
-        onTouchEnd={onTouchEnd}
+        onTouchEnd={wrapTouchEnd}
+        onTouchStart={onTouchStart}
         ref={ref}
       >
         <div className="p-1 h-full">
@@ -304,11 +347,13 @@ const WidgetWithRef = React.forwardRef(function Widget(
   if (size === "large") {
     return (
       <div
+        id={`${draggableIdMap[size]}-${id}`}
         style={{ ...style }}
-        className={className}
+        className={className + " on-remove-button"}
         onMouseDown={onMouseDown}
         onMouseUp={onMouseUp}
-        onTouchEnd={onTouchEnd}
+        onTouchEnd={wrapTouchEnd}
+        onTouchStart={onTouchStart}
         ref={ref}
       >
         <div className="p-1 h-full">
@@ -419,11 +464,13 @@ const WidgetWithRef = React.forwardRef(function Widget(
   if (size === "long") {
     return (
       <div
+        id={`${draggableIdMap[size]}-${id}`}
         style={{ ...style }}
-        className={className}
+        className={className + " on-remove-button"}
         onMouseDown={onMouseDown}
         onMouseUp={onMouseUp}
-        onTouchEnd={onTouchEnd}
+        onTouchEnd={wrapTouchEnd}
+        onTouchStart={onTouchStart}
         ref={ref}
       >
         <div className="p-1 h-full">
