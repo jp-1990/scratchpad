@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="601.6000000000001" height="480" viewBox="0 0 601.6000000000001 480" fill="none" y="0" x="0">
+        <rect x="40" y="440" width="521.6000000000001" height="1" fill="black" />
+        <line x1="63.2" y1="440" x2="63.2" y2="448" stroke="black" stroke-width="1"/>
+        <text x="63.2" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">Jan</tspan></text>
+      ,
+        <line x1="106.4" y1="440" x2="106.4" y2="448" stroke="black" stroke-width="1"/>
+        <text x="106.4" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">Feb</tspan></text>
+      ,
+        <line x1="149.6" y1="440" x2="149.6" y2="448" stroke="black" stroke-width="1"/>
+        <text x="149.6" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">Mar</tspan></text>
+      ,
+        <line x1="192.79999999999998" y1="440" x2="192.79999999999998" y2="448" stroke="black" stroke-width="1"/>
+        <text x="192.79999999999998" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">Apr</tspan></text>
+      ,
+        <line x1="235.99999999999997" y1="440" x2="235.99999999999997" y2="448" stroke="black" stroke-width="1"/>
+        <text x="235.99999999999997" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">May</tspan></text>
+      ,
+        <line x1="279.2" y1="440" x2="279.2" y2="448" stroke="black" stroke-width="1"/>
+        <text x="279.2" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">June</tspan></text>
+      ,
+        <line x1="322.4" y1="440" x2="322.4" y2="448" stroke="black" stroke-width="1"/>
+        <text x="322.4" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">July</tspan></text>
+      ,
+        <line x1="365.59999999999997" y1="440" x2="365.59999999999997" y2="448" stroke="black" stroke-width="1"/>
+        <text x="365.59999999999997" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">Aug</tspan></text>
+      ,
+        <line x1="408.79999999999995" y1="440" x2="408.79999999999995" y2="448" stroke="black" stroke-width="1"/>
+        <text x="408.79999999999995" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">Sept</tspan></text>
+      ,
+        <line x1="451.99999999999994" y1="440" x2="451.99999999999994" y2="448" stroke="black" stroke-width="1"/>
+        <text x="451.99999999999994" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">Oct</tspan></text>
+      ,
+        <line x1="495.19999999999993" y1="440" x2="495.19999999999993" y2="448" stroke="black" stroke-width="1"/>
+        <text x="495.19999999999993" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">Nov</tspan></text>
+      ,
+        <line x1="538.4" y1="440" x2="538.4" y2="448" stroke="black" stroke-width="1"/>
+        <text x="538.4" y="460.8" style="font-size: 12.8px;" text-anchor="middle"><tspan fill="black">Dec</tspan></text>
+      
+        <rect x="39" y="40" width="1" height="401" fill="black" />
+        <rect x="43.2" y="414.54545454545456" width="40" height="25.454545454545453" fill="#D9D9D9"/>,<rect x="86.4" y="406.06060606060606" width="40" height="33.939393939393945" fill="#D9D9D9"/>,<rect x="129.60000000000002" y="390.3030303030303" width="40" height="49.696969696969695" fill="#D9D9D9"/>,<rect x="172.8" y="351.5151515151515" width="40" height="88.48484848484848" fill="#D9D9D9"/>,<rect x="216" y="320" width="40" height="120" fill="#D9D9D9"/>,<rect x="259.2" y="265.4545454545455" width="40" height="174.54545454545453" fill="#D9D9D9"/>,<rect x="302.4" y="53.333333333333314" width="40" height="386.6666666666667" fill="#D9D9D9"/>,<rect x="345.59999999999997" y="138.1818181818182" width="40" height="301.8181818181818" fill="#D9D9D9"/>,<rect x="388.79999999999995" y="281.21212121212125" width="40" height="158.78787878787878" fill="#D9D9D9"/>,<rect x="431.99999999999994" y="373.33333333333337" width="40" height="66.66666666666666" fill="#D9D9D9"/>,<rect x="475.19999999999993" y="381.8181818181818" width="40" height="58.18181818181818" fill="#D9D9D9"/>,<rect x="518.3999999999999" y="409.6969696969697" width="40" height="30.303030303030305" fill="#D9D9D9"/>
+      </svg>

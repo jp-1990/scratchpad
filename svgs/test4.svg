@@ -1,0 +1,35 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" width="190" height="200" viewBox="0 0 190 200" fill="none">
+<rect x="35" y="43" width="20" height="125" fill="#D9D9D9"/>
+<rect x="57" y="62" width="20" height="106" fill="#D9D9D9"/>
+<rect x="79" y="12" width="20" height="156" fill="#D9D9D9"/>
+<rect x="101" y="121" width="20" height="47" fill="#D9D9D9"/>
+<rect x="123" y="92" width="20" height="76" fill="#D9D9D9"/>
+<rect x="145" y="73" width="20" height="95" fill="#D9D9D9"/>
+<text x="-85" y="16" style="font-size: 14px;" transform="rotate(-90)" text-anchor="middle"><tspan fill="black">y-axis label</tspan></text>
+<text x="95" y="192" style="font-size: 14px;" transform="rotate(0)" text-anchor="middle"><tspan fill="black">x-axis label</tspan></text>
+<line x1="30" y1="168.425" x2="167" y2="168.425" stroke="black"/>
+<line x1="45.5" y1="168" x2="45.5" y2="172" stroke="black"/>
+<line x1="30" y1="157.5" x2="34" y2="157.5" stroke="black"/>
+<line x1="30" y1="77.5" x2="34" y2="77.5" stroke="black"/>
+<line x1="30" y1="117.5" x2="34" y2="117.5" stroke="black"/>
+<line x1="30" y1="37.5" x2="34" y2="37.5" stroke="black"/>
+<line x1="30" y1="137.5" x2="34" y2="137.5" stroke="black"/>
+<line x1="30" y1="57.5" x2="34" y2="57.5" stroke="black"/>
+<line x1="30" y1="97.5" x2="34" y2="97.5" stroke="black"/>
+<line x1="30" y1="17.5" x2="34" y2="17.5" stroke="black"/>
+<line x1="30" y1="147.5" x2="34" y2="147.5" stroke="black"/>
+<line x1="30" y1="67.5" x2="34" y2="67.5" stroke="black"/>
+<line x1="30" y1="107.5" x2="34" y2="107.5" stroke="black"/>
+<line x1="30" y1="27.5" x2="34" y2="27.5" stroke="black"/>
+<line x1="30" y1="127.5" x2="34" y2="127.5" stroke="black"/>
+<line x1="30" y1="47.5" x2="34" y2="47.5" stroke="black"/>
+<line x1="30" y1="87.5" x2="34" y2="87.5" stroke="black"/>
+<line x1="30" y1="7.5" x2="34" y2="7.5" stroke="black"/>
+<line x1="67.5" y1="168" x2="67.5" y2="172" stroke="black"/>
+<line x1="89.5" y1="168" x2="89.5" y2="172" stroke="black"/>
+<line x1="111.5" y1="168" x2="111.5" y2="172" stroke="black"/>
+<line x1="133.5" y1="168" x2="133.5" y2="172" stroke="black"/>
+<line x1="155.5" y1="168" x2="155.5" y2="172" stroke="black"/>
+<line x1="33.5" y1="7" x2="33.5" y2="172" stroke="black"/>
+</svg>
