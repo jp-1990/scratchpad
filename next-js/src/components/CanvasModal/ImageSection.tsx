@@ -52,20 +52,28 @@ export default function ImageSection() {
   }
 
   function onImageChange(e: any, id: number) {
-    const scrollEl = document.getElementById("image-scroll-container");
-    if (!scrollEl) return;
-
     const event = new CustomEvent("onannotationdeselect", {
       ...e,
     });
     document.dispatchEvent(event);
 
+    const imageEl = document.getElementById("image-el") as HTMLImageElement;
+    const scrollEl = document.getElementById(
+      "image-scroll-container",
+    ) as HTMLDivElement;
+
+    if (scrollEl && imageEl) {
+      imageEl.onload = () => {
+        scrollEl.scrollTo({ top: 0, behavior: "instant" });
+      };
+    }
+
     setSelectedImage(id);
-    scrollEl.scrollTop = 0;
   }
 
-  function onCrop(id: number) {
-    setSelectedImage(id);
+  function onNewImage(id: number) {
+    console.log({ id });
+    onImageChange({}, id);
     setCommand(COMMAND.ANNOTATE);
   }
 
@@ -84,12 +92,17 @@ export default function ImageSection() {
           )}
           {command === COMMAND.CROP && (
             <CropCanvas
-              onCrop={onCrop}
+              onCrop={onNewImage}
               image={image.src}
               imageDims={selectedImageDims}
             />
           )}
-          <img className="w-full" onLoad={onImageLoad} src={image?.src} />
+          <img
+            id="image-el"
+            className="w-full"
+            onLoad={onImageLoad}
+            src={image?.src}
+          />
         </div>
       </div>
 
@@ -107,10 +120,43 @@ export default function ImageSection() {
           className={`absolute flex gap-2 px-1.5 pt-1.5 pb-1 h-12 -top-12 right-0 bg-slate-900 rounded-tl-xl  ${imageSelectOpen ? "rounded-br-none" : "rounded-br-sm"} border border-l-slate-500 border-t-slate-500 border-r-slate-900 border-b-slate-900`}
         >
           <button
+            id="file-select"
             className={`h-9 w-9 ${command === COMMAND.UPLOAD ? "bg-slate-100 text-slate-800" : "text-slate-50"} rounded-md`}
-            onClick={(e) => onCommandChange(e, COMMAND.UPLOAD)}
+            onClick={(e) => {
+              onCommandChange(e, COMMAND.UPLOAD);
+              const input = document.getElementById("file-input");
+              if (input) input.click();
+            }}
           >
             <UploadIcon sx={{ fontSize: "2rem" }} />
+            <input
+              type="file"
+              id="file-input"
+              multiple
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const files = e.target.files;
+                if (!files) return;
+
+                const currentImages = [...canvasState.images];
+                let newTargetId = undefined;
+                for (let i = 0; i < files.length; i++) {
+                  const file = files[i];
+                  const newSrc = URL.createObjectURL(file);
+                  const newId = Math.floor(Math.random() * 10000);
+                  newTargetId ??= newId;
+                  currentImages.push({
+                    id: newId,
+                    src: newSrc,
+                    createdAt: "26/05/25 10:25",
+                    createdBy: "user.name@companyname.com",
+                  });
+                }
+                canvasState.images = currentImages;
+                onNewImage(newTargetId as number);
+              }}
+            />
           </button>
           <button
             className={`h-9 w-9 ${command === COMMAND.CROP ? "bg-slate-100 text-slate-800" : "text-slate-50"} rounded-md`}

@@ -200,7 +200,14 @@ function ModalContent({
   } as const;
 
   React.useEffect(() => {
-    el.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const imageEl = document.getElementById("image-el") as HTMLImageElement;
+    if (imageEl && !imageEl.complete) {
+      imageEl.onload = () => {
+        el.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      };
+    } else {
+      el.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
 
     initialValues.current.title = data?.title ?? "";
     initialValues.current.details = data?.details ?? "";
@@ -610,7 +617,7 @@ export default function Details() {
 
             const el = document.getElementById(`note-${s.id}`);
 
-            if (el) {
+            if (el && canvasState.selectedScreenshot === s.screenshotId) {
               el?.scrollIntoView({
                 behavior: "smooth",
                 block: "center",
