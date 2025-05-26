@@ -44,6 +44,12 @@ export default function Navbar() {
       >
         PORTALS
       </Link>
+      <Link
+        href="/canvas"
+        className={`mr-4 ${pathname === "/canvas" ? "text-teal-500" : ""}`}
+      >
+        CANVAS
+      </Link>
     </nav>
   );
 }
