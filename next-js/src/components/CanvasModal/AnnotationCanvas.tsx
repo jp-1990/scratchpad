@@ -75,19 +75,23 @@ function mouseDownHandler(
     const offsetY = e.offsetY;
 
     let found = false;
-    mainState.shapes.forEach((s) => {
-      const hit = checkBounds(offsetX, offsetY, s.x, s.y, s.w, s.h);
-      if (hit) {
-        found = true;
-        const top = s.h < 0 ? s.y : s.y + s.h;
-        const left = s.w < 0 ? s.x + s.w : s.x;
-        const event = new CustomEvent("onannotationselect", {
-          ...e,
-          detail: { top, left, id: s.id },
-        });
-        document.dispatchEvent(event);
-      }
-    });
+    mainState.shapeIds[mainState.selectedScreenshot as number]?.forEach(
+      (id) => {
+        const s = mainState.shapes.get(id);
+        if (!s) return;
+        const hit = checkBounds(offsetX, offsetY, s.x, s.y, s.w, s.h);
+        if (hit) {
+          found = true;
+          const top = s.h < 0 ? s.y : s.y + s.h;
+          const left = s.w < 0 ? s.x + s.w : s.x;
+          const event = new CustomEvent("onannotationselect", {
+            ...e,
+            detail: { top, left, id: s.id },
+          });
+          document.dispatchEvent(event);
+        }
+      },
+    );
 
     if (!found) {
       drawState.isDrawing = true;
@@ -238,6 +242,11 @@ export default function AnnotationCanvas({ imageDims }: CanvasProps) {
   }).current;
 
   React.useEffect(() => {
+    let mousedown: any;
+    let mousemove: any;
+    let mouseup: any;
+    let annotationdelete: any;
+
     if (imageDims) {
       if (canvasRef.current?.getContext) {
         const context2d = canvasRef.current.getContext("2d")!;
@@ -245,29 +254,26 @@ export default function AnnotationCanvas({ imageDims }: CanvasProps) {
         context2d.canvas.height = context2d.canvas.clientHeight;
         ctxRef.current = context2d;
 
-        canvasRef.current.addEventListener(
-          "mousedown",
-          mouseDownHandler(context2d, mainState, drawState),
-        );
+        mousedown = mouseDownHandler(context2d, mainState, drawState);
+        mousemove = mouseMoveHandler(context2d, mainState, drawState);
+        mouseup = mouseUpHandler(context2d, mainState, drawState);
+        annotationdelete = redraw(context2d, mainState);
 
-        canvasRef.current.addEventListener(
-          "mousemove",
-          mouseMoveHandler(context2d, mainState, drawState),
-        );
-
-        canvasRef.current.addEventListener(
-          "mouseup",
-          mouseUpHandler(context2d, mainState, drawState),
-        );
-
-        document.addEventListener(
-          "onannotationdelete",
-          redraw(context2d, mainState),
-        );
+        canvasRef.current.addEventListener("mousedown", mousedown);
+        canvasRef.current.addEventListener("mousemove", mousemove);
+        canvasRef.current.addEventListener("mouseup", mouseup);
+        document.addEventListener("onannotationdelete", annotationdelete);
 
         redraw(context2d, mainState)({} as any);
       }
     }
+
+    return () => {
+      canvasRef.current?.removeEventListener("mousedown", mousedown);
+      canvasRef.current?.removeEventListener("mousemove", mousemove);
+      canvasRef.current?.removeEventListener("mouseup", mouseup);
+      document.removeEventListener("onannotationdelete", annotationdelete);
+    };
   }, [imageDims, canvasRef.current]);
 
   return (

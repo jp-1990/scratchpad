@@ -184,6 +184,10 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
       });
     }
 
+    let mousedown: any;
+    let mousemove: any;
+    let mouseup: any;
+
     if (imageDims) {
       if (canvasRef.current?.getContext) {
         const context2d = canvasRef.current.getContext("2d")!;
@@ -191,7 +195,7 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
         context2d.canvas.height = context2d.canvas.clientHeight;
         ctxRef.current = context2d;
 
-        canvasRef.current.addEventListener("mousedown", (e) => {
+        mousedown = (e: any) => {
           setModal({
             open: false,
             id: undefined as string | undefined,
@@ -213,17 +217,13 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
             context2d.canvas.height,
           );
           mouseDownHandler(context2d, mainState, drawState)(e);
-        });
+        };
+        mousemove = mouseMoveHandler(context2d, mainState, drawState);
+        mouseup = mouseUpHandler(context2d, mainState, drawState);
 
-        canvasRef.current.addEventListener(
-          "mousemove",
-          mouseMoveHandler(context2d, mainState, drawState),
-        );
-
-        canvasRef.current.addEventListener(
-          "mouseup",
-          mouseUpHandler(context2d, mainState, drawState),
-        );
+        canvasRef.current.addEventListener("mousedown", mousedown);
+        canvasRef.current.addEventListener("mousemove", mousemove);
+        canvasRef.current.addEventListener("mouseup", mouseup);
 
         context2d.fillStyle = "rgb(2 6 24 / 60%)";
         context2d.clearRect(
@@ -257,7 +257,11 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
     }
 
     document.addEventListener("oncrop", onCrop);
+
     return () => {
+      canvasRef.current?.removeEventListener("mousemove", mousemove);
+      canvasRef.current?.removeEventListener("mousedown", mousedown);
+      canvasRef.current?.removeEventListener("mouseup", mouseup);
       document.removeEventListener("oncrop", onCrop);
     };
   }, [imageDims, canvasRef.current]);
