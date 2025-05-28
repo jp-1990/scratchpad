@@ -5,13 +5,146 @@ import CloseIcon from "@mui/icons-material/Close";
 import { ModalContext } from "./context";
 import { createPortal } from "react-dom";
 
-type DrawState = {
+type TransformState = {
   isDrawing: boolean;
+  isMoving: boolean;
   offsetX: number | undefined;
   offsetY: number | undefined;
   width: number | undefined;
   height: number | undefined;
+  mouseX?: number;
+  mouseY?: number;
+  cropArea?: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  };
+  shape?: ClearRect;
 };
+
+class ClearRect {
+  ctx: CanvasRenderingContext2D;
+  offsetX: number;
+  offsetY: number;
+  width: number;
+  height: number;
+  isDrawing: boolean = false;
+  isMoving: boolean = false;
+
+  constructor(
+    ctx: CanvasRenderingContext2D,
+    offsetX: number,
+    offsetY: number,
+    width: number,
+    height: number,
+  ) {
+    this.offsetX = offsetX;
+    this.offsetY = offsetY;
+    this.width = width;
+    this.height = height;
+    this.ctx = ctx;
+  }
+
+  isPointerInside(pointerX: number, pointerY: number) {
+    const x1 = this.width < 0 ? this.offsetX + this.width : this.offsetX;
+    const x2 = this.width < 0 ? this.offsetX : this.offsetX + this.width;
+    const inX = pointerX >= x1 && pointerX <= x2;
+
+    const y1 = this.height < 0 ? this.offsetY + this.height : this.offsetY;
+    const y2 = this.height < 0 ? this.offsetY : this.offsetY + this.height;
+    const inY = pointerY >= y1 && pointerY <= y2;
+
+    return inX && inY;
+  }
+
+  move(newOffsetX: number, newOffsetY: number) {
+    this.offsetX += newOffsetX;
+    this.offsetY += newOffsetY;
+    return this;
+  }
+
+  resize(newOffsetX: number, newOffsetY: number) {
+    this.width = newOffsetX - this.offsetX;
+    this.height = newOffsetY - this.offsetY;
+    return this;
+  }
+
+  draw() {
+    this.ctx.fillStyle = "rgb(2 6 24 / 60%)";
+    this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+    this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+    this.ctx.clearRect(this.offsetX, this.offsetY, this.width, this.height);
+
+    // drag handles
+    this.ctx.fillStyle = "rgb(255 255 255 / 60%)";
+    this.ctx.fillRect(this.offsetX - 3, this.offsetY - 3, 6, 6);
+    this.ctx.fillRect(
+      this.offsetX + this.width / 2 - 3,
+      this.offsetY + this.height - 3,
+      6,
+      6,
+    );
+    this.ctx.fillRect(
+      this.offsetX + this.width / 2 - 3,
+      this.offsetY - 3,
+      6,
+      6,
+    );
+    this.ctx.fillRect(this.offsetX + this.width - 3, this.offsetY - 3, 6, 6);
+    this.ctx.fillRect(this.offsetX - 3, this.offsetY - 3 + this.height, 6, 6);
+    this.ctx.fillRect(
+      this.offsetX - 3,
+      this.offsetY - 3 + this.height / 2,
+      6,
+      6,
+    );
+    this.ctx.fillRect(
+      this.offsetX + this.width - 3,
+      this.offsetY - 3 + this.height,
+      6,
+      6,
+    );
+    this.ctx.fillRect(
+      this.offsetX + this.width - 3,
+      this.offsetY - 3 + this.height / 2,
+      6,
+      6,
+    );
+
+    return this;
+  }
+
+  beginDrawing() {
+    this.isDrawing = true;
+    return this;
+  }
+
+  beginMoving() {
+    this.isMoving = true;
+    return this;
+  }
+
+  commit() {
+    this.isDrawing = false;
+    this.isMoving = false;
+    return this;
+  }
+
+  getDims() {
+    const top = this.height < 0 ? this.offsetY : this.offsetY + this.height;
+    const left = this.width < 0 ? this.offsetX : this.offsetX + this.width;
+
+    return {
+      top,
+      left,
+      x: this.offsetX,
+      y: this.offsetY,
+      w: this.width,
+      h: this.height,
+    };
+  }
+}
 
 function checkBounds(
   targetX: number,
@@ -32,26 +165,57 @@ function checkBounds(
 }
 
 function mouseDownHandler(
-  _ctx: CanvasRenderingContext2D,
-  mainState: ModalContext,
-  drawState: DrawState,
+  ctx: CanvasRenderingContext2D,
+  _mainState: ModalContext,
+  transformState: TransformState,
 ) {
   return (e: MouseEvent) => {
     const offsetX = e.offsetX;
     const offsetY = e.offsetY;
 
+    // if (
+    //   transformState.shape &&
+    //   transformState.shape.isPointerInside(offsetX, offsetY)
+    // ) {
+    //   transformState.shape.beginMoving();
+    //   transformState.mouseX = offsetX;
+    //   transformState.mouseY = offsetY;
+    // } else {
+    //   const shape = new ClearRect(ctx, offsetX, offsetY, 0, 0);
+    //   transformState.shape = shape.beginDrawing();
+    // }
+
     let found = false;
-    mainState.shapes.forEach((s) => {
-      const hit = checkBounds(offsetX, offsetY, s.x, s.y, s.w, s.h);
+    const target = transformState.cropArea;
+    if (target) {
+      const hit = checkBounds(
+        offsetX,
+        offsetY,
+        target.x,
+        target.y,
+        target.w,
+        target.h,
+      );
       if (hit) {
         found = true;
       }
-    });
+    }
 
     if (!found) {
-      drawState.isDrawing = true;
-      drawState.offsetY = offsetY;
-      drawState.offsetX = offsetX;
+      transformState.isDrawing = true;
+      transformState.offsetY = offsetY;
+      transformState.offsetX = offsetX;
+    }
+
+    if (found && target) {
+      transformState.isMoving = true;
+      transformState.offsetY = target.y;
+      transformState.offsetX = target.x;
+      transformState.width = target.w;
+      transformState.height = target.h;
+      transformState.mouseX = offsetX;
+      transformState.mouseY = offsetY;
+      ctx.canvas.style.cursor = "move";
     }
   };
 }
@@ -59,69 +223,199 @@ function mouseDownHandler(
 function mouseMoveHandler(
   ctx: CanvasRenderingContext2D,
   mainState: ModalContext,
-  drawState: DrawState,
+  transformState: TransformState,
 ) {
   return (e: MouseEvent) => {
     const screenshotId = mainState.selectedScreenshot;
 
-    if (!screenshotId) return;
-    if (!drawState.isDrawing) return;
-    if (drawState.offsetX && drawState.offsetY) {
-      const offsetX = e.offsetX;
-      const offsetY = e.offsetY;
+    const offsetX = e.offsetX;
+    const offsetY = e.offsetY;
 
-      const w = offsetX - drawState.offsetX;
-      const h = offsetY - drawState.offsetY;
+    if (!screenshotId) return;
+
+    // if (!transformState.shape?.isMoving && !transformState.shape?.isDrawing) {
+    //   if (transformState.shape?.isPointerInside(offsetX, offsetY)) {
+    //     ctx.canvas.style.cursor = "move";
+    //   } else {
+    //     ctx.canvas.style.cursor = "default";
+    //   }
+    // }
+
+    if (!transformState.isMoving && !transformState.isDrawing) {
+      let found = false;
+      const target = transformState.cropArea;
+      if (target) {
+        const hit = checkBounds(
+          offsetX,
+          offsetY,
+          target.x,
+          target.y,
+          target.w,
+          target.h,
+        );
+        if (hit) {
+          found = true;
+        }
+      }
+      if (found) {
+        ctx.canvas.style.cursor = "move";
+      } else {
+        ctx.canvas.style.cursor = "default";
+      }
+    }
+
+    // if (transformState.shape?.isDrawing) {
+    //   transformState.shape.resize(offsetX, offsetY).draw();
+    // }
+
+    if (
+      transformState.isDrawing &&
+      transformState.offsetX &&
+      transformState.offsetY
+    ) {
+      const w = offsetX - transformState.offsetX;
+      const h = offsetY - transformState.offsetY;
 
       ctx.fillStyle = "rgb(2 6 24 / 60%)";
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.clearRect(drawState.offsetX, drawState.offsetY, w, h);
+      ctx.clearRect(transformState.offsetX, transformState.offsetY, w, h);
       // drag handles
       ctx.fillStyle = "rgb(255 255 255 / 60%)";
-      ctx.fillRect(drawState.offsetX - 3, drawState.offsetY - 3, 6, 6);
       ctx.fillRect(
-        drawState.offsetX + w / 2 - 3,
-        drawState.offsetY + h - 3,
+        transformState.offsetX - 3,
+        transformState.offsetY - 3,
         6,
         6,
       );
-      ctx.fillRect(drawState.offsetX + w / 2 - 3, drawState.offsetY - 3, 6, 6);
-      ctx.fillRect(drawState.offsetX + w - 3, drawState.offsetY - 3, 6, 6);
-      ctx.fillRect(drawState.offsetX - 3, drawState.offsetY - 3 + h, 6, 6);
-      ctx.fillRect(drawState.offsetX - 3, drawState.offsetY - 3 + h / 2, 6, 6);
-      ctx.fillRect(drawState.offsetX + w - 3, drawState.offsetY - 3 + h, 6, 6);
       ctx.fillRect(
-        drawState.offsetX + w - 3,
-        drawState.offsetY - 3 + h / 2,
+        transformState.offsetX + w / 2 - 3,
+        transformState.offsetY + h - 3,
         6,
         6,
       );
+      ctx.fillRect(
+        transformState.offsetX + w / 2 - 3,
+        transformState.offsetY - 3,
+        6,
+        6,
+      );
+      ctx.fillRect(
+        transformState.offsetX + w - 3,
+        transformState.offsetY - 3,
+        6,
+        6,
+      );
+      ctx.fillRect(
+        transformState.offsetX - 3,
+        transformState.offsetY - 3 + h,
+        6,
+        6,
+      );
+      ctx.fillRect(
+        transformState.offsetX - 3,
+        transformState.offsetY - 3 + h / 2,
+        6,
+        6,
+      );
+      ctx.fillRect(
+        transformState.offsetX + w - 3,
+        transformState.offsetY - 3 + h,
+        6,
+        6,
+      );
+      ctx.fillRect(
+        transformState.offsetX + w - 3,
+        transformState.offsetY - 3 + h / 2,
+        6,
+        6,
+      );
+    }
+
+    // if (transformState.shape?.isMoving) {
+    //   const mx = transformState.mouseX || transformState.shape.offsetX;
+    //   // const my = transformState.mouseY || 0;
+    //
+    //   const x = offsetX - mx;
+    //   // const y = offsetY - my;
+    //
+    //   transformState.shape.move(x, 0).draw();
+    //   transformState.mouseY = undefined;
+    // }
+
+    if (
+      transformState.isMoving &&
+      transformState.offsetX &&
+      transformState.offsetY &&
+      transformState.width &&
+      transformState.height
+    ) {
+      const mx = transformState.mouseX || 0;
+      const my = transformState.mouseY || 0;
+
+      const x = transformState.offsetX + (offsetX - mx);
+      const y = transformState.offsetY + (offsetY - my);
+      const w = transformState.width;
+      const h = transformState.height;
+
+      ctx.fillStyle = "rgb(2 6 24 / 60%)";
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.clearRect(x, y, w, h);
+
+      // drag handles
+      ctx.fillStyle = "rgb(255 255 255 / 60%)";
+      ctx.fillRect(x - 3, y - 3, 6, 6);
+      ctx.fillRect(x + w / 2 - 3, y + h - 3, 6, 6);
+      ctx.fillRect(x + w / 2 - 3, y - 3, 6, 6);
+      ctx.fillRect(x + w - 3, y - 3, 6, 6);
+      ctx.fillRect(x - 3, y - 3 + h, 6, 6);
+      ctx.fillRect(x - 3, y - 3 + h / 2, 6, 6);
+      ctx.fillRect(x + w - 3, y - 3 + h, 6, 6);
+      ctx.fillRect(x + w - 3, y - 3 + h / 2, 6, 6);
     }
   };
 }
 
 function mouseUpHandler(
-  _ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D,
   mainState: ModalContext,
-  drawState: DrawState,
+  transformState: TransformState,
 ) {
   return (e: MouseEvent) => {
     const screenshotId = mainState.selectedScreenshot;
+    const offsetY = e.offsetY;
+    const offsetX = e.offsetX;
 
     if (!screenshotId) return;
-    if (!drawState.isDrawing) return;
-    if (drawState.offsetX && drawState.offsetY) {
-      const offsetX = e.offsetX;
-      const offsetY = e.offsetY;
 
+    // if (transformState.shape?.isDrawing || transformState.shape?.isMoving) {
+    //   const dims = transformState.shape.getDims();
+    //   if ((dims.w > 9 || dims.w < -9) && (dims.h > 9 || dims.h < -9)) {
+    //     const event = new CustomEvent("oncrop", {
+    //       ...e,
+    //       detail: { id: screenshotId, top: dims.top, left: dims.left, dims },
+    //     });
+    //     document.dispatchEvent(event);
+    //   }
+    //
+    //   transformState.shape.commit();
+    // }
+
+    if (
+      transformState.isDrawing &&
+      transformState.offsetX &&
+      transformState.offsetY
+    ) {
       const dims = {
-        x: drawState.offsetX,
-        y: drawState.offsetY,
-        w: offsetX - drawState.offsetX,
-        h: offsetY - drawState.offsetY,
+        x: transformState.offsetX,
+        y: transformState.offsetY,
+        w: offsetX - transformState.offsetX,
+        h: offsetY - transformState.offsetY,
       };
       if ((dims.w > 9 || dims.w < -9) && (dims.h > 9 || dims.h < -9)) {
+        transformState.cropArea = dims;
+
         const top = dims.h < 0 ? dims.y : dims.y + dims.h;
         const left = dims.w < 0 ? dims.x : dims.x + dims.w;
         const event = new CustomEvent("oncrop", {
@@ -132,11 +426,48 @@ function mouseUpHandler(
       }
     }
 
-    drawState.isDrawing = false;
-    drawState.offsetY = undefined;
-    drawState.offsetX = undefined;
-    drawState.width = undefined;
-    drawState.height = undefined;
+    if (
+      transformState.isMoving &&
+      transformState.offsetX &&
+      transformState.offsetY &&
+      transformState.width &&
+      transformState.height
+    ) {
+      const mx = transformState.mouseX || 0;
+      const my = transformState.mouseY || 0;
+
+      const x = transformState.offsetX + (offsetX - mx);
+      const y = transformState.offsetY + (offsetY - my);
+      const w = transformState.width;
+      const h = transformState.height;
+
+      const dims = {
+        x,
+        y,
+        w,
+        h,
+      };
+      if ((dims.w > 9 || dims.w < -9) && (dims.h > 9 || dims.h < -9)) {
+        const top = dims.h < 0 ? dims.y : dims.y + dims.h;
+        const left = dims.w < 0 ? dims.x : dims.x + dims.w;
+        const event = new CustomEvent("oncrop", {
+          ...e,
+          detail: { id: screenshotId, top, left, dims },
+        });
+        document.dispatchEvent(event);
+
+        transformState.cropArea = dims;
+      }
+    }
+
+    transformState.isDrawing = false;
+    transformState.offsetY = undefined;
+    transformState.offsetX = undefined;
+    transformState.width = undefined;
+    transformState.height = undefined;
+    transformState.mouseX = undefined;
+    transformState.mouseY = undefined;
+    ctx.canvas.style.cursor = "default";
   };
 }
 
@@ -165,12 +496,16 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
 
   const mainState = React.useContext(ModalContext);
 
-  const drawState = React.useRef<DrawState>({
+  const transformState = React.useRef<TransformState>({
     isDrawing: false,
+    isMoving: false,
     offsetY: undefined,
     offsetX: undefined,
+    mouseX: undefined,
+    mouseY: undefined,
     width: undefined,
     height: undefined,
+    cropArea: undefined,
   }).current;
 
   React.useEffect(() => {
@@ -203,23 +538,10 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
             top: undefined as number | undefined,
             dims: undefined,
           });
-          context2d.fillStyle = "rgb(2 6 24 / 60%)";
-          context2d.clearRect(
-            0,
-            0,
-            context2d.canvas.width,
-            context2d.canvas.height,
-          );
-          context2d.fillRect(
-            0,
-            0,
-            context2d.canvas.width,
-            context2d.canvas.height,
-          );
-          mouseDownHandler(context2d, mainState, drawState)(e);
+          mouseDownHandler(context2d, mainState, transformState)(e);
         };
-        mousemove = mouseMoveHandler(context2d, mainState, drawState);
-        mouseup = mouseUpHandler(context2d, mainState, drawState);
+        mousemove = mouseMoveHandler(context2d, mainState, transformState);
+        mouseup = mouseUpHandler(context2d, mainState, transformState);
 
         canvasRef.current.addEventListener("mousedown", mousedown);
         canvasRef.current.addEventListener("mousemove", mousemove);
@@ -289,6 +611,8 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
         ctxRef.current.canvas.width,
         ctxRef.current.canvas.height,
       );
+
+      transformState.cropArea = undefined;
     }
   }
 
