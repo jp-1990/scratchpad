@@ -5,21 +5,22 @@ import CloseIcon from "@mui/icons-material/Close";
 import { ModalContext } from "./context";
 import { createPortal } from "react-dom";
 
+type Handle = "tl" | "tm" | "tr" | "ml" | "mr" | "bl" | "bm" | "br";
+
+const handleToCursor = {
+  tl: "nwse-resize",
+  tm: "ns-resize",
+  tr: "nesw-resize",
+  ml: "ew-resize",
+  mr: "ew-resize",
+  bl: "nesw-resize",
+  bm: "ns-resize",
+  br: "nwse-resize",
+};
+
 type TransformState = {
-  isDrawing: boolean;
-  isMoving: boolean;
-  offsetX: number | undefined;
-  offsetY: number | undefined;
-  width: number | undefined;
-  height: number | undefined;
   mouseX?: number;
   mouseY?: number;
-  cropArea?: {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  };
   shape?: ClearRect;
 };
 
@@ -29,8 +30,16 @@ class ClearRect {
   offsetY: number;
   width: number;
   height: number;
+  dragHandles: {
+    handle: Handle;
+    offsetX: number;
+    offsetY: number;
+    width: number;
+    height: number;
+  }[] = [];
   isDrawing: boolean = false;
   isMoving: boolean = false;
+  isResizing: Handle | undefined = undefined;
 
   constructor(
     ctx: CanvasRenderingContext2D,
@@ -58,6 +67,92 @@ class ClearRect {
     return inX && inY;
   }
 
+  isPointerInsideDragHandle(
+    pointerX: number,
+    pointerY: number,
+  ): Handle | undefined {
+    const padding = 8;
+    let found: Handle | undefined = undefined;
+    for (let i = 0; i < this.dragHandles.length; i++) {
+      const {
+        handle: loc,
+        offsetX,
+        offsetY,
+        width,
+        height,
+      } = this.dragHandles[i];
+
+      const x1 = width < 0 ? offsetX + width : offsetX;
+      const x2 = width < 0 ? offsetX : offsetX + width;
+      const inX = pointerX >= x1 - padding && pointerX <= x2 + padding;
+
+      const y1 = height < 0 ? offsetY + height : offsetY;
+      const y2 = height < 0 ? offsetY : offsetY + height;
+      const inY = pointerY >= y1 - padding && pointerY <= y2 + padding;
+
+      if (inX && inY) {
+        found = loc;
+        break;
+      }
+    }
+
+    return found;
+  }
+
+  resizeWithDragHandle(pointerX: number, pointerY: number) {
+    switch (this.isResizing) {
+      // top
+      case "tl": {
+        this.offsetY += pointerY;
+        this.offsetX += pointerX;
+        this.height -= pointerY;
+        this.width -= pointerX;
+        break;
+      }
+      case "tm": {
+        this.offsetY += pointerY;
+        this.height -= pointerY;
+        break;
+      }
+      case "tr": {
+        this.offsetY += pointerY;
+        this.height -= pointerY;
+        this.width += pointerX;
+        break;
+      }
+      // mid
+      case "ml": {
+        this.offsetX += pointerX;
+        this.width -= pointerX;
+        break;
+      }
+      case "mr": {
+        this.width += pointerX;
+        break;
+      }
+      // bot
+      case "bl": {
+        this.offsetX += pointerX;
+        this.height += pointerY;
+        this.width -= pointerX;
+        break;
+      }
+      case "bm": {
+        this.height += pointerY;
+        break;
+      }
+      case "br": {
+        this.height += pointerY;
+        this.width += pointerX;
+        break;
+      }
+      default:
+        break;
+    }
+
+    return this;
+  }
+
   move(newOffsetX: number, newOffsetY: number) {
     this.offsetX += newOffsetX;
     this.offsetY += newOffsetY;
@@ -70,6 +165,69 @@ class ClearRect {
     return this;
   }
 
+  drawDragHandle(handle: Handle) {
+    const width = 6;
+    const height = 6;
+    let offsetX = 0;
+    let offsetY = 0;
+    this.ctx.fillStyle = "rgb(255 255 255 / 60%)";
+
+    switch (handle) {
+      // top
+      case "tl": {
+        offsetX = this.offsetX - width / 2;
+        offsetY = this.offsetY - height / 2;
+        break;
+      }
+      case "tm": {
+        offsetX = this.offsetX + this.width / 2 - width / 2;
+        offsetY = this.offsetY - height / 2;
+        break;
+      }
+      case "tr": {
+        offsetX = this.offsetX + this.width - width / 2;
+        offsetY = this.offsetY - height / 2;
+        break;
+      }
+      // mid
+      case "ml": {
+        offsetX = this.offsetX - width / 2;
+        offsetY = this.offsetY + this.height / 2 - height / 2;
+        break;
+      }
+      case "mr": {
+        offsetX = this.offsetX + this.width - width / 2;
+        offsetY = this.offsetY + this.height / 2 - height / 2;
+        break;
+      }
+      // bot
+      case "bl": {
+        offsetX = this.offsetX - width / 2;
+        offsetY = this.offsetY + this.height - height / 2;
+        break;
+      }
+      case "bm": {
+        offsetX = this.offsetX + this.width / 2 - width / 2;
+        offsetY = this.offsetY + this.height - height / 2;
+        break;
+      }
+      case "br": {
+        offsetX = this.offsetX + this.width - width / 2;
+        offsetY = this.offsetY + this.height - height / 2;
+        break;
+      }
+    }
+
+    this.ctx.fillRect(offsetX, offsetY, width, height);
+    this.dragHandles.push({
+      handle: handle,
+      offsetX,
+      offsetY,
+      width,
+      height,
+    });
+  }
+
   draw() {
     this.ctx.fillStyle = "rgb(2 6 24 / 60%)";
     this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
@@ -77,40 +235,11 @@ class ClearRect {
     this.ctx.clearRect(this.offsetX, this.offsetY, this.width, this.height);
 
     // drag handles
-    this.ctx.fillStyle = "rgb(255 255 255 / 60%)";
-    this.ctx.fillRect(this.offsetX - 3, this.offsetY - 3, 6, 6);
-    this.ctx.fillRect(
-      this.offsetX + this.width / 2 - 3,
-      this.offsetY + this.height - 3,
-      6,
-      6,
-    );
-    this.ctx.fillRect(
-      this.offsetX + this.width / 2 - 3,
-      this.offsetY - 3,
-      6,
-      6,
-    );
-    this.ctx.fillRect(this.offsetX + this.width - 3, this.offsetY - 3, 6, 6);
-    this.ctx.fillRect(this.offsetX - 3, this.offsetY - 3 + this.height, 6, 6);
-    this.ctx.fillRect(
-      this.offsetX - 3,
-      this.offsetY - 3 + this.height / 2,
-      6,
-      6,
-    );
-    this.ctx.fillRect(
-      this.offsetX + this.width - 3,
-      this.offsetY - 3 + this.height,
-      6,
-      6,
-    );
-    this.ctx.fillRect(
-      this.offsetX + this.width - 3,
-      this.offsetY - 3 + this.height / 2,
-      6,
-      6,
-    );
+    this.dragHandles = [];
+    const locs = ["tl", "tm", "tr", "ml", "mr", "bl", "bm", "br"] as const;
+    for (let i = 0; i < locs.length; i++) {
+      this.drawDragHandle(locs[i]);
+    }
 
     return this;
   }
@@ -125,9 +254,15 @@ class ClearRect {
     return this;
   }
 
+  beginResizing(handle: Handle) {
+    this.isResizing = handle;
+    return this;
+  }
+
   commit() {
     this.isDrawing = false;
     this.isMoving = false;
+    this.isResizing = undefined;
     return this;
   }
 
@@ -146,76 +281,37 @@ class ClearRect {
   }
 }
 
-function checkBounds(
-  targetX: number,
-  targetY: number,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-) {
-  const x1 = width < 0 ? x + width : x;
-  const x2 = width < 0 ? x : x + width;
-  const inX = targetX >= x1 && targetX <= x2;
-  const y1 = height < 0 ? y + height : y;
-  const y2 = height < 0 ? y : y + height;
-  const inY = targetY >= y1 && targetY <= y2;
-
-  return inX && inY;
-}
-
 function mouseDownHandler(
   ctx: CanvasRenderingContext2D,
   _mainState: ModalContext,
   transformState: TransformState,
+  closeModal: () => void,
 ) {
   return (e: MouseEvent) => {
     const offsetX = e.offsetX;
     const offsetY = e.offsetY;
 
-    // if (
-    //   transformState.shape &&
-    //   transformState.shape.isPointerInside(offsetX, offsetY)
-    // ) {
-    //   transformState.shape.beginMoving();
-    //   transformState.mouseX = offsetX;
-    //   transformState.mouseY = offsetY;
-    // } else {
-    //   const shape = new ClearRect(ctx, offsetX, offsetY, 0, 0);
-    //   transformState.shape = shape.beginDrawing();
-    // }
+    closeModal();
 
-    let found = false;
-    const target = transformState.cropArea;
-    if (target) {
-      const hit = checkBounds(
-        offsetX,
-        offsetY,
-        target.x,
-        target.y,
-        target.w,
-        target.h,
-      );
-      if (hit) {
-        found = true;
-      }
-    }
-
-    if (!found) {
-      transformState.isDrawing = true;
-      transformState.offsetY = offsetY;
-      transformState.offsetX = offsetX;
-    }
-
-    if (found && target) {
-      transformState.isMoving = true;
-      transformState.offsetY = target.y;
-      transformState.offsetX = target.x;
-      transformState.width = target.w;
-      transformState.height = target.h;
+    const dragHandle = transformState.shape?.isPointerInsideDragHandle(
+      offsetX,
+      offsetY,
+    );
+    if (transformState.shape && dragHandle) {
+      transformState.shape.beginResizing(dragHandle);
       transformState.mouseX = offsetX;
       transformState.mouseY = offsetY;
-      ctx.canvas.style.cursor = "move";
+    } else if (
+      transformState.shape &&
+      transformState.shape.isPointerInside(offsetX, offsetY)
+    ) {
+      transformState.shape.beginMoving();
+      transformState.mouseX = offsetX;
+      transformState.mouseY = offsetY;
+    } else {
+      resetCanvas(ctx);
+      const shape = new ClearRect(ctx, offsetX, offsetY, 0, 0);
+      transformState.shape = shape.beginDrawing();
     }
   };
 }
@@ -233,242 +329,87 @@ function mouseMoveHandler(
 
     if (!screenshotId) return;
 
-    // if (!transformState.shape?.isMoving && !transformState.shape?.isDrawing) {
-    //   if (transformState.shape?.isPointerInside(offsetX, offsetY)) {
-    //     ctx.canvas.style.cursor = "move";
-    //   } else {
-    //     ctx.canvas.style.cursor = "default";
-    //   }
-    // }
-
-    if (!transformState.isMoving && !transformState.isDrawing) {
-      let found = false;
-      const target = transformState.cropArea;
-      if (target) {
-        const hit = checkBounds(
-          offsetX,
-          offsetY,
-          target.x,
-          target.y,
-          target.w,
-          target.h,
-        );
-        if (hit) {
-          found = true;
-        }
-      }
-      if (found) {
+    if (!transformState.shape?.isMoving && !transformState.shape?.isDrawing) {
+      const dragHandleLoc = transformState.shape?.isPointerInsideDragHandle(
+        offsetX,
+        offsetY,
+      );
+      if (dragHandleLoc || transformState.shape?.isResizing) {
+        ctx.canvas.style.cursor =
+          handleToCursor[dragHandleLoc ?? transformState.shape!.isResizing!];
+      } else if (transformState.shape?.isPointerInside(offsetX, offsetY)) {
         ctx.canvas.style.cursor = "move";
       } else {
         ctx.canvas.style.cursor = "default";
       }
     }
 
-    // if (transformState.shape?.isDrawing) {
-    //   transformState.shape.resize(offsetX, offsetY).draw();
-    // }
-
-    if (
-      transformState.isDrawing &&
-      transformState.offsetX &&
-      transformState.offsetY
-    ) {
-      const w = offsetX - transformState.offsetX;
-      const h = offsetY - transformState.offsetY;
-
-      ctx.fillStyle = "rgb(2 6 24 / 60%)";
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.clearRect(transformState.offsetX, transformState.offsetY, w, h);
-      // drag handles
-      ctx.fillStyle = "rgb(255 255 255 / 60%)";
-      ctx.fillRect(
-        transformState.offsetX - 3,
-        transformState.offsetY - 3,
-        6,
-        6,
-      );
-      ctx.fillRect(
-        transformState.offsetX + w / 2 - 3,
-        transformState.offsetY + h - 3,
-        6,
-        6,
-      );
-      ctx.fillRect(
-        transformState.offsetX + w / 2 - 3,
-        transformState.offsetY - 3,
-        6,
-        6,
-      );
-      ctx.fillRect(
-        transformState.offsetX + w - 3,
-        transformState.offsetY - 3,
-        6,
-        6,
-      );
-      ctx.fillRect(
-        transformState.offsetX - 3,
-        transformState.offsetY - 3 + h,
-        6,
-        6,
-      );
-      ctx.fillRect(
-        transformState.offsetX - 3,
-        transformState.offsetY - 3 + h / 2,
-        6,
-        6,
-      );
-      ctx.fillRect(
-        transformState.offsetX + w - 3,
-        transformState.offsetY - 3 + h,
-        6,
-        6,
-      );
-      ctx.fillRect(
-        transformState.offsetX + w - 3,
-        transformState.offsetY - 3 + h / 2,
-        6,
-        6,
-      );
-    }
-
-    // if (transformState.shape?.isMoving) {
-    //   const mx = transformState.mouseX || transformState.shape.offsetX;
-    //   // const my = transformState.mouseY || 0;
-    //
-    //   const x = offsetX - mx;
-    //   // const y = offsetY - my;
-    //
-    //   transformState.shape.move(x, 0).draw();
-    //   transformState.mouseY = undefined;
-    // }
-
-    if (
-      transformState.isMoving &&
-      transformState.offsetX &&
-      transformState.offsetY &&
-      transformState.width &&
-      transformState.height
-    ) {
+    if (transformState.shape?.isResizing) {
       const mx = transformState.mouseX || 0;
       const my = transformState.mouseY || 0;
 
-      const x = transformState.offsetX + (offsetX - mx);
-      const y = transformState.offsetY + (offsetY - my);
-      const w = transformState.width;
-      const h = transformState.height;
+      const x = offsetX - mx;
+      const y = offsetY - my;
 
-      ctx.fillStyle = "rgb(2 6 24 / 60%)";
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.clearRect(x, y, w, h);
+      transformState.shape.resizeWithDragHandle(x, y).draw();
+      transformState.mouseX = offsetX;
+      transformState.mouseY = offsetY;
+    } else if (transformState.shape?.isDrawing) {
+      const dims = transformState.shape.getDims();
+      transformState.shape.resize(offsetX, offsetY);
 
-      // drag handles
-      ctx.fillStyle = "rgb(255 255 255 / 60%)";
-      ctx.fillRect(x - 3, y - 3, 6, 6);
-      ctx.fillRect(x + w / 2 - 3, y + h - 3, 6, 6);
-      ctx.fillRect(x + w / 2 - 3, y - 3, 6, 6);
-      ctx.fillRect(x + w - 3, y - 3, 6, 6);
-      ctx.fillRect(x - 3, y - 3 + h, 6, 6);
-      ctx.fillRect(x - 3, y - 3 + h / 2, 6, 6);
-      ctx.fillRect(x + w - 3, y - 3 + h, 6, 6);
-      ctx.fillRect(x + w - 3, y - 3 + h / 2, 6, 6);
+      if ((dims.w > 20 || dims.w < -20) && (dims.h > 20 || dims.h < -20)) {
+        transformState.shape.draw();
+      }
+    } else if (transformState.shape?.isMoving) {
+      const mx = transformState.mouseX || 0;
+      const my = transformState.mouseY || 0;
+
+      const x = offsetX - mx;
+      const y = offsetY - my;
+
+      transformState.shape.move(x, y).draw();
+      transformState.mouseX = offsetX;
+      transformState.mouseY = offsetY;
     }
   };
 }
 
 function mouseUpHandler(
-  ctx: CanvasRenderingContext2D,
+  _ctx: CanvasRenderingContext2D,
   mainState: ModalContext,
   transformState: TransformState,
 ) {
   return (e: MouseEvent) => {
     const screenshotId = mainState.selectedScreenshot;
-    const offsetY = e.offsetY;
-    const offsetX = e.offsetX;
-
     if (!screenshotId) return;
 
-    // if (transformState.shape?.isDrawing || transformState.shape?.isMoving) {
-    //   const dims = transformState.shape.getDims();
-    //   if ((dims.w > 9 || dims.w < -9) && (dims.h > 9 || dims.h < -9)) {
-    //     const event = new CustomEvent("oncrop", {
-    //       ...e,
-    //       detail: { id: screenshotId, top: dims.top, left: dims.left, dims },
-    //     });
-    //     document.dispatchEvent(event);
-    //   }
-    //
-    //   transformState.shape.commit();
-    // }
-
     if (
-      transformState.isDrawing &&
-      transformState.offsetX &&
-      transformState.offsetY
+      transformState.shape?.isDrawing ||
+      transformState.shape?.isMoving ||
+      transformState.shape?.isResizing
     ) {
-      const dims = {
-        x: transformState.offsetX,
-        y: transformState.offsetY,
-        w: offsetX - transformState.offsetX,
-        h: offsetY - transformState.offsetY,
-      };
-      if ((dims.w > 9 || dims.w < -9) && (dims.h > 9 || dims.h < -9)) {
-        transformState.cropArea = dims;
-
-        const top = dims.h < 0 ? dims.y : dims.y + dims.h;
-        const left = dims.w < 0 ? dims.x : dims.x + dims.w;
+      const dims = transformState.shape.getDims();
+      if ((dims.w > 20 || dims.w < -20) && (dims.h > 20 || dims.h < -20)) {
         const event = new CustomEvent("oncrop", {
           ...e,
-          detail: { id: screenshotId, top, left, dims },
+          detail: { id: screenshotId, top: dims.top, left: dims.left, dims },
         });
         document.dispatchEvent(event);
       }
+
+      transformState.shape.commit();
     }
 
-    if (
-      transformState.isMoving &&
-      transformState.offsetX &&
-      transformState.offsetY &&
-      transformState.width &&
-      transformState.height
-    ) {
-      const mx = transformState.mouseX || 0;
-      const my = transformState.mouseY || 0;
-
-      const x = transformState.offsetX + (offsetX - mx);
-      const y = transformState.offsetY + (offsetY - my);
-      const w = transformState.width;
-      const h = transformState.height;
-
-      const dims = {
-        x,
-        y,
-        w,
-        h,
-      };
-      if ((dims.w > 9 || dims.w < -9) && (dims.h > 9 || dims.h < -9)) {
-        const top = dims.h < 0 ? dims.y : dims.y + dims.h;
-        const left = dims.w < 0 ? dims.x : dims.x + dims.w;
-        const event = new CustomEvent("oncrop", {
-          ...e,
-          detail: { id: screenshotId, top, left, dims },
-        });
-        document.dispatchEvent(event);
-
-        transformState.cropArea = dims;
-      }
-    }
-
-    transformState.isDrawing = false;
-    transformState.offsetY = undefined;
-    transformState.offsetX = undefined;
-    transformState.width = undefined;
-    transformState.height = undefined;
     transformState.mouseX = undefined;
     transformState.mouseY = undefined;
-    ctx.canvas.style.cursor = "default";
   };
+}
+
+function resetCanvas(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = "rgb(2 6 24 / 60%)";
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 }
 
 type CanvasProps = {
@@ -497,26 +438,30 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
   const mainState = React.useContext(ModalContext);
 
   const transformState = React.useRef<TransformState>({
-    isDrawing: false,
-    isMoving: false,
-    offsetY: undefined,
-    offsetX: undefined,
     mouseX: undefined,
     mouseY: undefined,
-    width: undefined,
-    height: undefined,
-    cropArea: undefined,
+    shape: undefined,
   }).current;
+
+  function resetTransformState() {
+    transformState.shape = undefined;
+    transformState.mouseX = undefined;
+    transformState.mouseY = undefined;
+  }
+
+  function resetModal() {
+    setModal({
+      open: false,
+      id: undefined,
+      left: undefined,
+      top: undefined,
+      dims: undefined,
+    });
+  }
 
   React.useEffect(() => {
     if (modal.open) {
-      setModal({
-        open: false,
-        id: undefined as string | undefined,
-        left: undefined as number | undefined,
-        top: undefined as number | undefined,
-        dims: undefined,
-      });
+      resetModal();
     }
 
     let mousedown: any;
@@ -530,16 +475,12 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
         context2d.canvas.height = context2d.canvas.clientHeight;
         ctxRef.current = context2d;
 
-        mousedown = (e: any) => {
-          setModal({
-            open: false,
-            id: undefined as string | undefined,
-            left: undefined as number | undefined,
-            top: undefined as number | undefined,
-            dims: undefined,
-          });
-          mouseDownHandler(context2d, mainState, transformState)(e);
-        };
+        mousedown = mouseDownHandler(
+          context2d,
+          mainState,
+          transformState,
+          resetModal,
+        );
         mousemove = mouseMoveHandler(context2d, mainState, transformState);
         mouseup = mouseUpHandler(context2d, mainState, transformState);
 
@@ -547,19 +488,7 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
         canvasRef.current.addEventListener("mousemove", mousemove);
         canvasRef.current.addEventListener("mouseup", mouseup);
 
-        context2d.fillStyle = "rgb(2 6 24 / 60%)";
-        context2d.clearRect(
-          0,
-          0,
-          context2d.canvas.width,
-          context2d.canvas.height,
-        );
-        context2d.fillRect(
-          0,
-          0,
-          context2d.canvas.width,
-          context2d.canvas.height,
-        );
+        resetCanvas(context2d);
       }
     }
 
@@ -586,38 +515,20 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
       canvasRef.current?.removeEventListener("mouseup", mouseup);
       document.removeEventListener("oncrop", onCrop);
     };
-  }, [imageDims, canvasRef.current]);
+  }, [imageDims]);
 
   function onClose() {
-    setModal({
-      open: false,
-      id: undefined,
-      left: undefined,
-      top: undefined,
-      dims: undefined,
-    });
+    resetModal();
+    resetTransformState();
 
     if (ctxRef.current) {
-      ctxRef.current.fillStyle = "rgb(2 6 24 / 60%)";
-      ctxRef.current.clearRect(
-        0,
-        0,
-        ctxRef.current.canvas.width,
-        ctxRef.current.canvas.height,
-      );
-      ctxRef.current.fillRect(
-        0,
-        0,
-        ctxRef.current.canvas.width,
-        ctxRef.current.canvas.height,
-      );
-
-      transformState.cropArea = undefined;
+      resetCanvas(ctxRef.current);
     }
   }
 
   async function onSave() {
     if (!modal.open || !modal.dims) return;
+    console.log(modal.dims);
 
     // create temp canvas
     const tempCanvas = document.createElement("canvas");

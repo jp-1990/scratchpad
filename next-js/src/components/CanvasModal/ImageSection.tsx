@@ -72,7 +72,6 @@ export default function ImageSection() {
   }
 
   function onNewImage(id: number) {
-    console.log({ id });
     onImageChange({}, id);
     setCommand(COMMAND.ANNOTATE);
   }
