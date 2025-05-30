@@ -279,6 +279,22 @@ class ClearRect {
       h: this.height,
     };
   }
+
+  getTruePosition() {
+    const offsetX = this.width < 0 ? this.offsetX + this.width : this.offsetX;
+    const offsetY = this.height < 0 ? this.offsetY + this.height : this.offsetY;
+    const width = Math.abs(this.width);
+    const height = Math.abs(this.height);
+
+    return {
+      top: offsetY + height,
+      left: offsetX + width,
+      x: offsetX,
+      y: offsetY,
+      w: width,
+      h: height,
+    };
+  }
 }
 
 function mouseDownHandler(
@@ -389,7 +405,7 @@ function mouseUpHandler(
       transformState.shape?.isMoving ||
       transformState.shape?.isResizing
     ) {
-      const dims = transformState.shape.getDims();
+      const dims = transformState.shape.getTruePosition();
       if ((dims.w > 20 || dims.w < -20) && (dims.h > 20 || dims.h < -20)) {
         const event = new CustomEvent("oncrop", {
           ...e,
