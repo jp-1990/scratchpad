@@ -544,7 +544,6 @@ export default function CropCanvas({ onCrop, image, imageDims }: CanvasProps) {
 
   async function onSave() {
     if (!modal.open || !modal.dims) return;
-    console.log(modal.dims);
 
     // create temp canvas
     const tempCanvas = document.createElement("canvas");

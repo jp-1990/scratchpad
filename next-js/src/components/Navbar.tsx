@@ -50,6 +50,12 @@ export default function Navbar() {
       >
         CANVAS
       </Link>
+      <Link
+        href="/hands"
+        className={`mr-4 ${pathname === "/hands" ? "text-teal-500" : ""}`}
+      >
+        HANDS
+      </Link>
     </nav>
   );
 }
