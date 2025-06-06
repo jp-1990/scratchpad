@@ -80,10 +80,10 @@ export default function ImageSection() {
   const image = canvasState.images[imageIdx];
 
   return (
-    <div className="relative flex flex-col [height:calc(100%_-_6.5rem)]">
+    <div className="relative flex flex-col h-[calc(100%-6.5rem)]">
       <div
         id="image-scroll-container"
-        className="relative flex flex-1 pb-12 rounded-sm border border-slate-600 bg-slate-800 overflow-y-auto  [scrollbar-color:_#94a3b8_#00000000] [scrollbar-width:_thin]"
+        className="relative flex flex-1 pb-12 rounded-xs border border-slate-600 bg-slate-800 overflow-y-auto  [scrollbar-color:#94a3b8_#00000000] [scrollbar-width:thin]"
       >
         <div id="canvas-container" className="relative h-fit w-full">
           {command === COMMAND.ANNOTATE && (
@@ -193,10 +193,10 @@ export default function ImageSection() {
                   onClick={(e) => {
                     onImageChange(e, id);
                   }}
-                  className={`flex items-start overflow-hidden rounded-md border border-x-2 [border-left-style:_dotted] [border-right-style:_dotted] p-[3px] ${selectedImage === id ? "border-slate-200" : "border-transparent"}`}
+                  className={`flex items-start overflow-hidden rounded-md border border-x-2 [border-left-style:dotted] [border-right-style:dotted] p-[3px] ${selectedImage === id ? "border-slate-200" : "border-transparent"}`}
                 >
                   <div className="flex items-start overflow-hidden h-12 w-12 border border-transparent">
-                    <img className=" w-12 rounded-sm object-cover" src={src} />
+                    <img className=" w-12 rounded-xs object-cover" src={src} />
                   </div>
                 </button>
               );

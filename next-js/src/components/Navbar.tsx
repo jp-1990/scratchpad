@@ -7,7 +7,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="p-2 border border-teal-500 rounded-sm">
+    <nav className="p-2 border border-teal-500 rounded-xs">
       <Link
         href="/"
         className={`mr-4 ${pathname === "/" ? "text-teal-500" : ""}`}

@@ -173,7 +173,7 @@ export default function App() {
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-[repeat(4,_minmax(0,_250px))] max-w-full">
+      <div className="grid grid-cols-[repeat(4,minmax(0,250px))] max-w-full">
         <SortableContext items={items} strategy={rectSwappingStrategy}>
           {items.map((item) => (
             <SortableBox

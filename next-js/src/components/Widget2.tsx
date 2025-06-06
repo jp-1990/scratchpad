@@ -319,7 +319,7 @@ const WidgetWithRef = React.forwardRef(function Widget(
               <div />
               <div
                 id="card-actions"
-                className="border-slate-800 py-1 px-2 rounded-sm on-remove-button"
+                className="border-slate-800 py-1 px-2 rounded-xs on-remove-button"
               >
                 <button
                   className="mr-2 text-lg font-mono"
@@ -362,7 +362,7 @@ const WidgetWithRef = React.forwardRef(function Widget(
               <h2 className="text-2xl">{title}</h2>
               <div
                 id="card-actions"
-                className="border-slate-800 py-1 px-2 rounded-sm on-remove-button"
+                className="border-slate-800 py-1 px-2 rounded-xs on-remove-button"
               >
                 <button
                   className="mr-2 text-lg font-mono"
@@ -441,13 +441,13 @@ const WidgetWithRef = React.forwardRef(function Widget(
                 <div className="flex flex-1" />
                 <footer className="flex w-full justify-end">
                   <button
-                    className="border border-teal-500 rounded-sm px-4 py-2 mr-2"
+                    className="border border-teal-500 rounded-xs px-4 py-2 mr-2"
                     onClick={cancelFilters}
                   >
                     Cancel
                   </button>
                   <button
-                    className="bg-teal-500 px-4 py-2 rounded-sm text-white"
+                    className="bg-teal-500 px-4 py-2 rounded-xs text-white"
                     onClick={applyFilters}
                   >
                     Apply
@@ -484,7 +484,7 @@ const WidgetWithRef = React.forwardRef(function Widget(
               </span>
               <div
                 id="card-actions"
-                className="border-slate-800 py-1 px-2 rounded-sm on-remove-button"
+                className="border-slate-800 py-1 px-2 rounded-xs on-remove-button"
               >
                 <button
                   className="mr-2 text-lg font-mono"
@@ -561,13 +561,13 @@ const WidgetWithRef = React.forwardRef(function Widget(
                   </FormControl>
                   <footer className="flex justify-end flex-col ml-2">
                     <button
-                      className="border border-teal-500 rounded-sm px-2 py-1 mb-1"
+                      className="border border-teal-500 rounded-xs px-2 py-1 mb-1"
                       onClick={cancelFilters}
                     >
                       Cancel
                     </button>
                     <button
-                      className="bg-teal-500 px-2 py-1 rounded-sm text-white"
+                      className="bg-teal-500 px-2 py-1 rounded-xs text-white"
                       onClick={applyFilters}
                     >
                       Apply
@@ -779,20 +779,20 @@ export default function WidgetPage() {
 
       <div className="fixed bottom-6 right-6 font-mono flex flex-col">
         <button
-          className="px-3 py-1 my-1 rounded-sm bg-gray-50 text-gray-900 text-xl"
+          className="px-3 py-1 my-1 rounded-xs bg-gray-50 text-gray-900 text-xl"
           onClick={() => addWidget("small")}
         >
           ADD 1x1
         </button>
         <button
-          className="px-3 py-1 my-1 rounded-sm bg-gray-50 text-gray-900 text-xl"
+          className="px-3 py-1 my-1 rounded-xs bg-gray-50 text-gray-900 text-xl"
           onClick={() => addWidget("large")}
         >
           ADD 2x2
         </button>
         {innerWidth > breakpoints.xs && (
           <button
-            className="px-3 py-1 my-1 rounded-sm bg-gray-50 text-gray-900 text-xl"
+            className="px-3 py-1 my-1 rounded-xs bg-gray-50 text-gray-900 text-xl"
             onClick={() => addWidget("long")}
           >
             ADD 4x1

@@ -36,7 +36,7 @@ function BasicDropdown() {
       {open &&
         createPortal(
           <div
-            className="w-32 h-96 bg-red-500 absolute z-[1400]"
+            className="w-32 h-96 bg-red-500 absolute z-1400"
             style={{ top: dropdownY, left: dropdownX }}
           ></div>,
           document.body,

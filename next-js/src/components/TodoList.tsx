@@ -34,7 +34,7 @@ export default function TodoList({ todos }: Props) {
           return (
             <article
               key={todo.id}
-              className="p-1 mb-2 border border-teal-300 rounded-sm"
+              className="p-1 mb-2 border border-teal-300 rounded-xs"
             >
               <div className="flex justify-between">
                 <span className="flex">

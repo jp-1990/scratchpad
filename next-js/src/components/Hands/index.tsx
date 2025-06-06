@@ -170,12 +170,12 @@ export default function Hands() {
             playsInline={true}
             width={640}
             height={480}
-            className="transform rotate-x-180"
+            className="transform rotate-y-180"
           ></video>
           <canvas
             ref={canvasRef}
             id="output_canvas"
-            className="transform rotate-180"
+            className="transform rotate-y-180"
             width={640}
             height={480}
           ></canvas>

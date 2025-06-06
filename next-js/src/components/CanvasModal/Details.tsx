@@ -54,7 +54,7 @@ function Note({ data, onClick }: NoteProps) {
     <div key={data.id} className="mb-3 cursor-pointer" onClick={onClick}>
       <div className="flex items-center justify-between mb-0.5 min-h-6">
         <div className="flex items-center ">
-          <div className="h-4 w-4 bg-slate-400 rounded-sm mr-1"></div>
+          <div className="h-4 w-4 bg-slate-400 rounded-xs mr-1"></div>
           <h6 className="text-slate-300">{data.title}</h6>
         </div>
         <span className="text-sm text-slate-400 font-light">
@@ -127,7 +127,7 @@ function Comment({ comment }: CommentProps) {
               <img
                 key={img}
                 onClick={() => setLightbox(idx)}
-                className="h-12 w-12 rounded-sm"
+                className="h-12 w-12 rounded-xs"
                 src={img}
               />
             );
@@ -137,7 +137,7 @@ function Comment({ comment }: CommentProps) {
 
       {lightbox !== undefined &&
         createPortal(
-          <div className="absolute z-[10000] w-full h-full top-0 left-0">
+          <div className="absolute z-10000 w-full h-full top-0 left-0">
             <div
               onClick={() => setLightbox(undefined)}
               className="flex justify-center items-center w-full h-full bg-slate-900/80"
@@ -373,7 +373,7 @@ function ModalContent({
           <div className="-mb-1">
             <div className="flex items-center justify-between mb-0.5 min-h-5 -mt-1">
               <div className="flex items-center ">
-                <div className="h-4 w-4 bg-slate-400 rounded-sm mr-1"></div>
+                <div className="h-4 w-4 bg-slate-400 rounded-xs mr-1"></div>
                 <h6 className="text text-slate-300">{data?.title}</h6>
               </div>
             </div>
@@ -402,7 +402,7 @@ function ModalContent({
               <div className="flex flex-col mb-1">
                 <textarea
                   id="details"
-                  className="w-full bg-slate-600 placeholder:text-slate-300 text-slate-100 font-light text-sm rounded-t-sm px-2 py-1 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300"
+                  className="w-full bg-slate-600 placeholder:text-slate-300 text-slate-100 font-light text-sm rounded-t-sm px-2 py-1 transition duration-300 ease focus:outline-hidden focus:border-slate-400 hover:border-slate-300"
                   placeholder="Comment..."
                   onChange={onCommentChange}
                 />
@@ -456,7 +456,7 @@ function ModalContent({
         {canEdit && (
           <input
             id="title"
-            className="w-full bg-slate-600 placeholder:text-slate-300 text-slate-100 font-light text-sm rounded-sm px-2 py-1 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300"
+            className="w-full bg-slate-600 placeholder:text-slate-300 text-slate-100 font-light text-sm rounded-xs px-2 py-1 transition duration-300 ease focus:outline-hidden focus:border-slate-400 hover:border-slate-300"
             placeholder="Title..."
             value={data?.title}
             onChange={onChange}
@@ -465,7 +465,7 @@ function ModalContent({
         {canEdit && (
           <textarea
             id="details"
-            className="w-full bg-slate-600 placeholder:text-slate-300 text-slate-100 font-light text-sm rounded-sm px-2 py-1 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300"
+            className="w-full bg-slate-600 placeholder:text-slate-300 text-slate-100 font-light text-sm rounded-xs px-2 py-1 transition duration-300 ease focus:outline-hidden focus:border-slate-400 hover:border-slate-300"
             placeholder="Details..."
             value={data?.details}
             onChange={onChange}
@@ -477,7 +477,7 @@ function ModalContent({
             {!data?.timestamp && (
               <button
                 onClick={onDelete}
-                className="w-20 border border-slate-100 text-slate-100 font-light rounded-sm text-sm px-4 py-1"
+                className="w-20 border border-slate-100 text-slate-100 font-light rounded-xs text-sm px-4 py-1"
               >
                 Delete
               </button>
@@ -485,14 +485,14 @@ function ModalContent({
             {data?.timestamp && (
               <button
                 onClick={onCancel}
-                className="w-20 border border-slate-100 text-slate-100 font-light rounded-sm text-sm px-4 py-1"
+                className="w-20 border border-slate-100 text-slate-100 font-light rounded-xs text-sm px-4 py-1"
               >
                 Cancel
               </button>
             )}
             <button
               onClick={onSave}
-              className="w-20 border border-slate-100 bg-slate-100 text-slate-700 font-light rounded-sm text-sm px-4 py-1"
+              className="w-20 border border-slate-100 bg-slate-100 text-slate-700 font-light rounded-xs text-sm px-4 py-1"
             >
               Save
             </button>
@@ -602,12 +602,12 @@ export default function Details() {
     <>
       <Typography
         variant="subtitle1"
-        className="!leading-none text-slate-50 !mb-3 !ml-4"
+        className="leading-none! text-slate-50 mb-3! ml-4!"
       >
         Notes
       </Typography>
 
-      <div className="flex flex-col flex-1 pl-4 overflow-y-auto [scrollbar-gutter:_stable] [scrollbar-color:_#94a3b8_#00000000] [scrollbar-width:_thin] pr-1 -mr-3 mb-4">
+      <div className="flex flex-col flex-1 pl-4 overflow-y-auto [scrollbar-gutter:stable] [scrollbar-color:#94a3b8_#00000000] [scrollbar-width:thin] pr-1 -mr-3 mb-4">
         {Array.from(notes, ([_name, value]) => value).map((n) => {
           function onClick() {
             const s = canvasState.shapes.get(n.id);
