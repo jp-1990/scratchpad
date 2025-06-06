@@ -7,6 +7,7 @@ import {
   HandLandmarkerResult,
   DrawingUtils,
 } from "@mediapipe/tasks-vision";
+import { render } from "./scene";
 
 function useHandLandmarker() {
   const [handLandmarker, setHandlandMarker] = React.useState<HandLandmarker>();
@@ -40,6 +41,13 @@ const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
 
 export default function Hands() {
   const handLandmarker = useHandLandmarker();
+  const handsObjRef = React.useRef();
+  const handsObj = handsObjRef.current;
+
+  React.useEffect(() => {
+    const hands = render();
+    handsObjRef.current = hands;
+  }, []);
 
   let drawingUtils = React.useRef<DrawingUtils>().current;
   const lastVideoTime = React.useRef(-1);
@@ -126,6 +134,18 @@ export default function Hands() {
           radius: 2,
         });
       }
+
+      if (handsObj) {
+        for (let i = 0; i < 21; i++) {
+          if (!results.current.landmarks?.[0]?.[i]) continue;
+          handsObj.children[i].position.x =
+            -results.current.landmarks[0][i].x + 0.5;
+          handsObj.children[i].position.y =
+            -results.current.landmarks[0][i].y + 0.5;
+          handsObj.children[i].position.z = -results.current.landmarks[0][i].z;
+          handsObj.children[i].position.multiplyScalar(4);
+        }
+      }
     }
 
     canvasCtx.restore();
@@ -142,17 +162,22 @@ export default function Hands() {
         <button onClick={enableCam}>
           <span>ENABLE WEBCAM</span>
         </button>
-        <div className="relative">
+        <div className="relative w-[1282px] h-[482px] flex flex-row border border-gray-600">
           <video
             ref={webcamRef}
             id="webcam"
             autoPlay={true}
             playsInline={true}
+            width={640}
+            height={480}
+            className="transform rotate-x-180"
           ></video>
           <canvas
             ref={canvasRef}
             id="output_canvas"
-            className="absolute left-0 top-0 z-10"
+            className="transform rotate-180"
+            width={640}
+            height={480}
           ></canvas>
         </div>
       </section>
